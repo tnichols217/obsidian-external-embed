@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-iframes",
+	"name": "Sample Plugin",
+	"version": "1.0.2",
+	"minAppVersion": "0.12.0",
+	"description": "Fixes iframes in Obsidian because they dont work properly when referring to local files",
+	"author": "Trevor Nichols",
+	"authorUrl": "https://github.com/tnichols217/",
+	"isDesktopOnly": false
+}
