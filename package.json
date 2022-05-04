@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-iframes",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Fixes iframes in Obsidian because they dont work properly when referring to local files",
 	"main": "main.js",
 	"scripts": {
