@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-iframes",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"description": "Allows you to create relative iframes and MD iframes in Obsidian",
 	"main": "main.js",
 	"scripts": {
