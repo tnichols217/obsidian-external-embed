@@ -1599,6 +1599,7 @@ var ObsidianColumnsSettings = class extends import_obsidian.PluginSettingTab {
   }
   display() {
     const { containerEl } = this;
+    containerEl.empty();
     containerEl.createEl("h2", { text: "Settings for obsidian-columns" });
     let keyvals = Object.entries(DEFAULT_SETTINGS);
     console.log(keyvals);

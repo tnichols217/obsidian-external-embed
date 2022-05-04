@@ -136,7 +136,7 @@ class ObsidianColumnsSettings extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
-		// containerEl.empty();
+		containerEl.empty();
 		containerEl.createEl('h2', { text: 'Settings for obsidian-columns' });
 
 		let keyvals = Object.entries(DEFAULT_SETTINGS)
