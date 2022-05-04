@@ -1,10 +1,13 @@
-import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App } from 'obsidian';
+import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App, request } from 'obsidian';
 import { readFile } from "fs"
 import axios from "axios"
+import html2md from 'html-to-md'
 
 const URISCHEME = "file://"
 const MDDIVCLASS = "obsidian-iframe-md"
 const ERRORMD = "# Obsidian-iframes cannot access the internet"
+const CONVERTMD = "iframe-md"
+const IGNOREDTAGS = [CONVERTMD, "src", "sandbox"]
 
 interface settingItem<T> {
 	value: T
@@ -12,12 +15,12 @@ interface settingItem<T> {
 	desc?: string
 }
 
-interface columnSettings {
+interface iframeSettings {
 	allowInet: settingItem<boolean>
 }
 
-const DEFAULT_SETTINGS: columnSettings = {
-	allowInet: {value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files."}
+const DEFAULT_SETTINGS: iframeSettings = {
+	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." }
 }
 
 let parseBoolean = (value: string) => {
@@ -38,12 +41,12 @@ let parseObject = (value: any, typ: string) => {
 
 export default class ObsidianIframes extends Plugin {
 
-	settings: columnSettings;
+	settings: iframeSettings;
 
 	async onload() {
 
 		await this.loadSettings();
-		this.addSettingTab(new ObsidianColumnsSettings(this.app, this));
+		this.addSettingTab(new ObsidianIframeSettings(this.app, this));
 
 		let processIframe = (element: Element, context: MarkdownPostProcessorContext) => {
 			let iframes = element.querySelectorAll("iframe")
@@ -70,7 +73,11 @@ export default class ObsidianIframes extends Plugin {
 					}
 				}
 
-				if (src.endsWith(".md")) {
+				let classAttrib = child.getAttribute("class")
+				let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
+				let endsMD = src.endsWith(".md")
+
+				if (endsMD || convertHTML) {
 					// Request file
 					let url = new URL(child.getAttribute("src"));
 
@@ -80,7 +87,7 @@ export default class ObsidianIframes extends Plugin {
 						})
 						let div = element.createEl("div", { cls: MDDIVCLASS })
 						Array.from(child.attributes).forEach((i) => {
-							if (i.nodeName != "src" && i.nodeName != "sandbox") {
+							if (!IGNOREDTAGS.contains(i.nodeName)) {
 								div.setAttribute(i.nodeName, i.nodeValue)
 							}
 						})
@@ -91,17 +98,25 @@ export default class ObsidianIframes extends Plugin {
 							sourcePath,
 							null
 						);
-
 					}
 
 					if (url.protocol == "file:") {
 						readFile(url.pathname, (e, d) => {
 							if (e) console.error(e)
-							fileContentCallback(d.toString())
+							let dString = d.toString()
+							if (convertHTML && !endsMD) {
+								dString = html2md(dString)
+							}
+							fileContentCallback(dString)
 						})
 					} else {
 						if (this.settings.allowInet.value) {
-						axios(url.href).then((a) => fileContentCallback(a.data)).catch(console.error)
+							request({url: url.href}).then((a) => {
+								if (convertHTML && !endsMD) {
+									a = html2md(a)
+								}
+								fileContentCallback(a)
+							}).catch(console.error)
 						} else {
 							fileContentCallback(ERRORMD)
 						}
@@ -126,7 +141,7 @@ export default class ObsidianIframes extends Plugin {
 	}
 }
 
-class ObsidianColumnsSettings extends PluginSettingTab {
+class ObsidianIframeSettings extends PluginSettingTab {
 	plugin: ObsidianIframes;
 
 	constructor(app: App, plugin: ObsidianIframes) {

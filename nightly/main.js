@@ -50,1442 +50,2968 @@ var __async = (__this, __arguments, generator) => {
   });
 };
 
-// node_modules/axios/lib/helpers/bind.js
-var require_bind = __commonJS({
-  "node_modules/axios/lib/helpers/bind.js"(exports, module2) {
-    "use strict";
-    module2.exports = function bind(fn, thisArg) {
-      return function wrap() {
-        var args = new Array(arguments.length);
-        for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i];
+// node_modules/html-to-md/dist/index.js
+var require_dist = __commonJS({
+  "node_modules/html-to-md/dist/index.js"(exports, module2) {
+    !function(t, e) {
+      typeof exports === "object" && typeof module2 === "object" ? module2.exports = e() : typeof define === "function" && define.amd ? define([], e) : typeof exports === "object" ? exports.html2md = e() : t.html2md = e();
+    }(exports, function() {
+      return function(t) {
+        var e = {};
+        function n(r) {
+          if (e[r])
+            return e[r].exports;
+          var o = e[r] = { i: r, l: false, exports: {} };
+          return t[r].call(o.exports, o, o.exports, n), o.l = true, o.exports;
         }
-        return fn.apply(thisArg, args);
-      };
-    };
-  }
-});
-
-// node_modules/axios/lib/utils.js
-var require_utils = __commonJS({
-  "node_modules/axios/lib/utils.js"(exports, module2) {
-    "use strict";
-    var bind = require_bind();
-    var toString = Object.prototype.toString;
-    var kindOf = function(cache) {
-      return function(thing) {
-        var str = toString.call(thing);
-        return cache[str] || (cache[str] = str.slice(8, -1).toLowerCase());
-      };
-    }(Object.create(null));
-    function kindOfTest(type) {
-      type = type.toLowerCase();
-      return function isKindOf(thing) {
-        return kindOf(thing) === type;
-      };
-    }
-    function isArray(val) {
-      return Array.isArray(val);
-    }
-    function isUndefined(val) {
-      return typeof val === "undefined";
-    }
-    function isBuffer(val) {
-      return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor) && typeof val.constructor.isBuffer === "function" && val.constructor.isBuffer(val);
-    }
-    var isArrayBuffer = kindOfTest("ArrayBuffer");
-    function isArrayBufferView(val) {
-      var result;
-      if (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView) {
-        result = ArrayBuffer.isView(val);
-      } else {
-        result = val && val.buffer && isArrayBuffer(val.buffer);
-      }
-      return result;
-    }
-    function isString(val) {
-      return typeof val === "string";
-    }
-    function isNumber(val) {
-      return typeof val === "number";
-    }
-    function isObject(val) {
-      return val !== null && typeof val === "object";
-    }
-    function isPlainObject(val) {
-      if (kindOf(val) !== "object") {
-        return false;
-      }
-      var prototype = Object.getPrototypeOf(val);
-      return prototype === null || prototype === Object.prototype;
-    }
-    var isDate = kindOfTest("Date");
-    var isFile = kindOfTest("File");
-    var isBlob = kindOfTest("Blob");
-    var isFileList = kindOfTest("FileList");
-    function isFunction(val) {
-      return toString.call(val) === "[object Function]";
-    }
-    function isStream(val) {
-      return isObject(val) && isFunction(val.pipe);
-    }
-    function isFormData(thing) {
-      var pattern = "[object FormData]";
-      return thing && (typeof FormData === "function" && thing instanceof FormData || toString.call(thing) === pattern || isFunction(thing.toString) && thing.toString() === pattern);
-    }
-    var isURLSearchParams = kindOfTest("URLSearchParams");
-    function trim(str) {
-      return str.trim ? str.trim() : str.replace(/^\s+|\s+$/g, "");
-    }
-    function isStandardBrowserEnv() {
-      if (typeof navigator !== "undefined" && (navigator.product === "ReactNative" || navigator.product === "NativeScript" || navigator.product === "NS")) {
-        return false;
-      }
-      return typeof window !== "undefined" && typeof document !== "undefined";
-    }
-    function forEach(obj, fn) {
-      if (obj === null || typeof obj === "undefined") {
-        return;
-      }
-      if (typeof obj !== "object") {
-        obj = [obj];
-      }
-      if (isArray(obj)) {
-        for (var i = 0, l = obj.length; i < l; i++) {
-          fn.call(null, obj[i], i, obj);
-        }
-      } else {
-        for (var key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            fn.call(null, obj[key], key, obj);
-          }
-        }
-      }
-    }
-    function merge() {
-      var result = {};
-      function assignValue(val, key) {
-        if (isPlainObject(result[key]) && isPlainObject(val)) {
-          result[key] = merge(result[key], val);
-        } else if (isPlainObject(val)) {
-          result[key] = merge({}, val);
-        } else if (isArray(val)) {
-          result[key] = val.slice();
-        } else {
-          result[key] = val;
-        }
-      }
-      for (var i = 0, l = arguments.length; i < l; i++) {
-        forEach(arguments[i], assignValue);
-      }
-      return result;
-    }
-    function extend(a, b, thisArg) {
-      forEach(b, function assignValue(val, key) {
-        if (thisArg && typeof val === "function") {
-          a[key] = bind(val, thisArg);
-        } else {
-          a[key] = val;
-        }
-      });
-      return a;
-    }
-    function stripBOM(content) {
-      if (content.charCodeAt(0) === 65279) {
-        content = content.slice(1);
-      }
-      return content;
-    }
-    function inherits(constructor, superConstructor, props, descriptors) {
-      constructor.prototype = Object.create(superConstructor.prototype, descriptors);
-      constructor.prototype.constructor = constructor;
-      props && Object.assign(constructor.prototype, props);
-    }
-    function toFlatObject(sourceObj, destObj, filter) {
-      var props;
-      var i;
-      var prop;
-      var merged = {};
-      destObj = destObj || {};
-      do {
-        props = Object.getOwnPropertyNames(sourceObj);
-        i = props.length;
-        while (i-- > 0) {
-          prop = props[i];
-          if (!merged[prop]) {
-            destObj[prop] = sourceObj[prop];
-            merged[prop] = true;
-          }
-        }
-        sourceObj = Object.getPrototypeOf(sourceObj);
-      } while (sourceObj && (!filter || filter(sourceObj, destObj)) && sourceObj !== Object.prototype);
-      return destObj;
-    }
-    function endsWith(str, searchString, position) {
-      str = String(str);
-      if (position === void 0 || position > str.length) {
-        position = str.length;
-      }
-      position -= searchString.length;
-      var lastIndex = str.indexOf(searchString, position);
-      return lastIndex !== -1 && lastIndex === position;
-    }
-    function toArray(thing) {
-      if (!thing)
-        return null;
-      var i = thing.length;
-      if (isUndefined(i))
-        return null;
-      var arr = new Array(i);
-      while (i-- > 0) {
-        arr[i] = thing[i];
-      }
-      return arr;
-    }
-    var isTypedArray = function(TypedArray) {
-      return function(thing) {
-        return TypedArray && thing instanceof TypedArray;
-      };
-    }(typeof Uint8Array !== "undefined" && Object.getPrototypeOf(Uint8Array));
-    module2.exports = {
-      isArray,
-      isArrayBuffer,
-      isBuffer,
-      isFormData,
-      isArrayBufferView,
-      isString,
-      isNumber,
-      isObject,
-      isPlainObject,
-      isUndefined,
-      isDate,
-      isFile,
-      isBlob,
-      isFunction,
-      isStream,
-      isURLSearchParams,
-      isStandardBrowserEnv,
-      forEach,
-      merge,
-      extend,
-      trim,
-      stripBOM,
-      inherits,
-      toFlatObject,
-      kindOf,
-      kindOfTest,
-      endsWith,
-      toArray,
-      isTypedArray,
-      isFileList
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/buildURL.js
-var require_buildURL = __commonJS({
-  "node_modules/axios/lib/helpers/buildURL.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    function encode(val) {
-      return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+").replace(/%5B/gi, "[").replace(/%5D/gi, "]");
-    }
-    module2.exports = function buildURL(url, params, paramsSerializer) {
-      if (!params) {
-        return url;
-      }
-      var serializedParams;
-      if (paramsSerializer) {
-        serializedParams = paramsSerializer(params);
-      } else if (utils.isURLSearchParams(params)) {
-        serializedParams = params.toString();
-      } else {
-        var parts = [];
-        utils.forEach(params, function serialize(val, key) {
-          if (val === null || typeof val === "undefined") {
-            return;
-          }
-          if (utils.isArray(val)) {
-            key = key + "[]";
-          } else {
-            val = [val];
-          }
-          utils.forEach(val, function parseValue(v) {
-            if (utils.isDate(v)) {
-              v = v.toISOString();
-            } else if (utils.isObject(v)) {
-              v = JSON.stringify(v);
+        return n.m = t, n.c = e, n.d = function(t2, e2, r) {
+          n.o(t2, e2) || Object.defineProperty(t2, e2, { enumerable: true, get: r });
+        }, n.r = function(t2) {
+          typeof Symbol !== "undefined" && Symbol.toStringTag && Object.defineProperty(t2, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(t2, "__esModule", { value: true });
+        }, n.t = function(t2, e2) {
+          if (1 & e2 && (t2 = n(t2)), 8 & e2)
+            return t2;
+          if (4 & e2 && typeof t2 === "object" && t2 && t2.__esModule)
+            return t2;
+          var r = Object.create(null);
+          if (n.r(r), Object.defineProperty(r, "default", { enumerable: true, value: t2 }), 2 & e2 && typeof t2 != "string")
+            for (var o in t2)
+              n.d(r, o, function(e3) {
+                return t2[e3];
+              }.bind(null, o));
+          return r;
+        }, n.n = function(t2) {
+          var e2 = t2 && t2.__esModule ? function() {
+            return t2.default;
+          } : function() {
+            return t2;
+          };
+          return n.d(e2, "a", e2), e2;
+        }, n.o = function(t2, e2) {
+          return Object.prototype.hasOwnProperty.call(t2, e2);
+        }, n.p = "", n(n.s = 45);
+      }([function(t, e, n) {
+        function r(t2, e2) {
+          return function(t3) {
+            if (Array.isArray(t3))
+              return t3;
+          }(t2) || function(t3, e3) {
+            var n2 = [], r2 = true, o2 = false, i2 = void 0;
+            try {
+              for (var u2, c2 = t3[Symbol.iterator](); !(r2 = (u2 = c2.next()).done) && (n2.push(u2.value), !e3 || n2.length !== e3); r2 = true)
+                ;
+            } catch (a2) {
+              o2 = true, i2 = a2;
+            } finally {
+              try {
+                r2 || c2.return == null || c2.return();
+              } finally {
+                if (o2)
+                  throw i2;
+              }
             }
-            parts.push(encode(key) + "=" + encode(v));
-          });
-        });
-        serializedParams = parts.join("&");
-      }
-      if (serializedParams) {
-        var hashmarkIndex = url.indexOf("#");
-        if (hashmarkIndex !== -1) {
-          url = url.slice(0, hashmarkIndex);
+            return n2;
+          }(t2, e2) || function() {
+            throw new TypeError("Invalid attempt to destructure non-iterable instance");
+          }();
         }
-        url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
-      }
-      return url;
-    };
-  }
-});
-
-// node_modules/axios/lib/core/InterceptorManager.js
-var require_InterceptorManager = __commonJS({
-  "node_modules/axios/lib/core/InterceptorManager.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    function InterceptorManager() {
-      this.handlers = [];
-    }
-    InterceptorManager.prototype.use = function use(fulfilled, rejected, options) {
-      this.handlers.push({
-        fulfilled,
-        rejected,
-        synchronous: options ? options.synchronous : false,
-        runWhen: options ? options.runWhen : null
-      });
-      return this.handlers.length - 1;
-    };
-    InterceptorManager.prototype.eject = function eject(id) {
-      if (this.handlers[id]) {
-        this.handlers[id] = null;
-      }
-    };
-    InterceptorManager.prototype.forEach = function forEach(fn) {
-      utils.forEach(this.handlers, function forEachHandler(h) {
-        if (h !== null) {
-          fn(h);
-        }
-      });
-    };
-    module2.exports = InterceptorManager;
-  }
-});
-
-// node_modules/axios/lib/helpers/normalizeHeaderName.js
-var require_normalizeHeaderName = __commonJS({
-  "node_modules/axios/lib/helpers/normalizeHeaderName.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    module2.exports = function normalizeHeaderName(headers, normalizedName) {
-      utils.forEach(headers, function processHeader(value, name) {
-        if (name !== normalizedName && name.toUpperCase() === normalizedName.toUpperCase()) {
-          headers[normalizedName] = value;
-          delete headers[name];
-        }
-      });
-    };
-  }
-});
-
-// node_modules/axios/lib/core/AxiosError.js
-var require_AxiosError = __commonJS({
-  "node_modules/axios/lib/core/AxiosError.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    function AxiosError(message, code, config, request, response) {
-      Error.call(this);
-      this.message = message;
-      this.name = "AxiosError";
-      code && (this.code = code);
-      config && (this.config = config);
-      request && (this.request = request);
-      response && (this.response = response);
-    }
-    utils.inherits(AxiosError, Error, {
-      toJSON: function toJSON() {
-        return {
-          message: this.message,
-          name: this.name,
-          description: this.description,
-          number: this.number,
-          fileName: this.fileName,
-          lineNumber: this.lineNumber,
-          columnNumber: this.columnNumber,
-          stack: this.stack,
-          config: this.config,
-          code: this.code,
-          status: this.response && this.response.status ? this.response.status : null
-        };
-      }
-    });
-    var prototype = AxiosError.prototype;
-    var descriptors = {};
-    [
-      "ERR_BAD_OPTION_VALUE",
-      "ERR_BAD_OPTION",
-      "ECONNABORTED",
-      "ETIMEDOUT",
-      "ERR_NETWORK",
-      "ERR_FR_TOO_MANY_REDIRECTS",
-      "ERR_DEPRECATED",
-      "ERR_BAD_RESPONSE",
-      "ERR_BAD_REQUEST",
-      "ERR_CANCELED"
-    ].forEach(function(code) {
-      descriptors[code] = { value: code };
-    });
-    Object.defineProperties(AxiosError, descriptors);
-    Object.defineProperty(prototype, "isAxiosError", { value: true });
-    AxiosError.from = function(error, code, config, request, response, customProps) {
-      var axiosError = Object.create(prototype);
-      utils.toFlatObject(error, axiosError, function filter(obj) {
-        return obj !== Error.prototype;
-      });
-      AxiosError.call(axiosError, error.message, code, config, request, response);
-      axiosError.name = error.name;
-      customProps && Object.assign(axiosError, customProps);
-      return axiosError;
-    };
-    module2.exports = AxiosError;
-  }
-});
-
-// node_modules/axios/lib/defaults/transitional.js
-var require_transitional = __commonJS({
-  "node_modules/axios/lib/defaults/transitional.js"(exports, module2) {
-    "use strict";
-    module2.exports = {
-      silentJSONParsing: true,
-      forcedJSONParsing: true,
-      clarifyTimeoutError: false
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/toFormData.js
-var require_toFormData = __commonJS({
-  "node_modules/axios/lib/helpers/toFormData.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    function toFormData(obj, formData) {
-      formData = formData || new FormData();
-      var stack = [];
-      function convertValue(value) {
-        if (value === null)
-          return "";
-        if (utils.isDate(value)) {
-          return value.toISOString();
-        }
-        if (utils.isArrayBuffer(value) || utils.isTypedArray(value)) {
-          return typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
-        }
-        return value;
-      }
-      function build(data, parentKey) {
-        if (utils.isPlainObject(data) || utils.isArray(data)) {
-          if (stack.indexOf(data) !== -1) {
-            throw Error("Circular reference detected in " + parentKey);
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
           }
-          stack.push(data);
-          utils.forEach(data, function each(value, key) {
-            if (utils.isUndefined(value))
-              return;
-            var fullKey = parentKey ? parentKey + "." + key : key;
-            var arr;
-            if (value && !parentKey && typeof value === "object") {
-              if (utils.endsWith(key, "{}")) {
-                value = JSON.stringify(value);
-              } else if (utils.endsWith(key, "[]") && (arr = utils.toArray(value))) {
-                arr.forEach(function(el) {
-                  !utils.isUndefined(el) && formData.append(fullKey, convertValue(el));
+        }
+        var i = n(1), u = i.findValidTag, c = i.findTagClass, a = i.parseAttrs, f = n(12), l = n(9).SINGLE, p = n(7), s = function() {
+          function t2(e3, n3) {
+            var r2 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {}, o2 = r2.keepFormat, i3 = o2 !== void 0 && o2, u2 = r2.prevTagName, c2 = u2 === void 0 ? "" : u2, a2 = r2.nextTagName, f2 = a2 === void 0 ? "" : a2, l2 = r2.parentTag, p2 = l2 === void 0 ? "" : l2, s2 = r2.isFirstTag, y = s2 === void 0 || s2, b = r2.calcLeading, h = b !== void 0 && b, g = r2.leadingSpace, v = g === void 0 ? "" : g, d = r2.layer, m = d === void 0 ? 1 : d, O = r2.noWrap, _ = O !== void 0 && O, w = r2.match, j = w === void 0 ? null : w, S = r2.intendSpace, P = S === void 0 ? "" : S, x = r2.language, k = x === void 0 ? "" : x, T = r2.count, R = T === void 0 ? 1 : T, E = r2.tableColumnCount, C = E === void 0 ? 0 : E, N = r2.noExtraLine, L = N !== void 0 && N;
+            if (function(t3, e4) {
+              if (!(t3 instanceof e4))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, t2), this.tagName = n3, this.rawStr = e3, this.parentTag = p2, this.prevTagName = c2, this.nextTagName = f2, this.isFirstTag = y, this.calcLeading = h, this.leadingSpace = v, this.layer = m, this.noWrap = _, this.match = j, this.intendSpace = P, this.language = k, this.count = R, this.tableColumnCount = C, this.noExtraLine = L, this.keepFormat = i3, !this.__detectStr__(e3, this.tagName))
+              return this.attrs = {}, void (this.content = "");
+            var D = this.__fetchTagAttrAndContent__(e3), M = D.attr, F = D.content;
+            this.attrs = M, this.content = F;
+          }
+          var e2, n2, i2;
+          return e2 = t2, (n2 = [{ key: "__detectStr__", value: function(t3, e3) {
+            if (t3[0] !== "<")
+              return console.error("Not a valid tag, current tag name: ".concat(this.tagName, ", tag content: ").concat(t3)), false;
+            for (var n3 = "", r2 = false, o2 = 1; o2 < t3.length && t3[o2] !== ">"; o2++)
+              !r2 && /(\s|\/)/.test(t3[o2]) && (r2 = true), r2 || (n3 += t3[o2]);
+            return n3.endsWith("/") ? (console.warn("There detect a self close tag, which name is:", n3.slice(0, -1)), false) : n3 === e3 || (console.warn("Tag is not match tagName, tagName in str is " + n3 + ", which tagName passed from parent is " + e3), false);
+          } }, { key: "__fetchTagAttrAndContent__", value: function(t3) {
+            for (var e3 = "", n3 = 1; n3 < t3.length && t3[n3] !== ">"; n3++)
+              e3 += t3[n3];
+            for (var r2 = t3.slice(n3 + 1), o2 = "", i3 = -1, u2 = r2.length - 1; u2 >= 0; u2--)
+              if ((o2 = r2[u2] + o2).startsWith("</")) {
+                o2.startsWith("</" + this.tagName + ">") && (i3 = u2);
+                break;
+              }
+            return i3 === -1 && console.warn("Tag " + this.tagName + " has no close."), { attr: a(e3), content: r2.slice(0, i3) };
+          } }, { key: "__onlyLeadingSpace__", value: function(t3) {
+            t3 = t3.trim();
+            for (var e3 = 0; e3 < t3.length; e3++)
+              if (t3[e3] !== l)
+                return false;
+            return true;
+          } }, { key: "__isEmpty__", value: function(t3) {
+            return !this.keepFormat && (t3 === "" || this.calcLeading && this.__onlyLeadingSpace__(t3));
+          } }, { key: "beforeParse", value: function() {
+            return "";
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            return new (c(e3))(t3, e3, n3).exec();
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return new f(t3, e3, n3).exec();
+          } }, { key: "afterParsed", value: function(t3) {
+            return t3;
+          } }, { key: "slim", value: function(t3) {
+            return this.keepFormat ? t3 : t3.trim();
+          } }, { key: "beforeMergeSpace", value: function(t3) {
+            return t3;
+          } }, { key: "mergeSpace", value: function(t3, e3, n3) {
+            return this.keepFormat && this.tagName !== "pre" ? t3.endsWith("\n") ? t3 : t3 + n3.replace(/\n+/g, "\n") : e3 + t3 + n3;
+          } }, { key: "afterMergeSpace", value: function(t3) {
+            return t3;
+          } }, { key: "beforeReturn", value: function(t3) {
+            return t3;
+          } }, { key: "exec", value: function() {
+            for (var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", e3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "", n3 = this.beforeParse(), o2 = u(this.content), i3 = r(o2(), 2), c2 = i3[0], a2 = i3[1], f2 = null; a2 !== ""; ) {
+              var l2 = r(o2(), 2), s2 = l2[0], y = l2[1], b = { parentTag: this.tagName, nextTagName: s2, afterNextTagStr: y, prevTagName: f2, leadingSpace: this.leadingSpace, layer: this.layer, keepFormat: this.keepFormat }, h = void 0;
+              h = c2 != null ? this.parseValidSubTag(a2, c2, b) : this.parseOnlyString(a2, c2, b);
+              var g = c2;
+              c2 = s2, a2 = y, g == null && this.__isEmpty__(h) || (f2 = g, this.isFirstTag = false, n3 += h);
+            }
+            return n3 = this.afterParsed(n3), n3 = this.slim(n3), !this.keepFormat && this.__isEmpty__(n3) ? "" : (n3 = this.beforeMergeSpace(n3), this.noExtraLine || !p(this.tagName) || !this.prevTagName || n3.startsWith("\n") || p(this.prevTagName) || (t3 = "\n\n"), n3 = this.mergeSpace(n3, t3, e3), this.noWrap && !this.keepFormat && (n3 = n3.replace(/\s+/g, " ")), n3 = this.afterMergeSpace(n3), n3 = this.beforeReturn(n3));
+          } }]) && o(e2.prototype, n2), i2 && o(e2, i2), t2;
+        }();
+        t.exports = s;
+      }, function(t, e, n) {
+        var r = n(46), o = r.escape, i = r.extraEscape, u = r.unescape, c = n(47), a = n(48), f = n(11), l = n(50), p = n(51), s = n(52), y = n(17), b = n(7), h = n(53), g = n(54);
+        t.exports = { escape: o, extraEscape: i, unescape: u, getRealTagName: y, findTagClass: a, findValidTag: c, isSelfClosing: f, parseAttrs: l, getTableAlign: h, getLanguage: p, clearComment: s, needIndependentLine: b, shouldRenderRawInside: g };
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h1";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "# " + t3;
+          } }, { key: "exec", value: function(t3, n3) {
+            return t3 || (t3 = "\n"), n3 || (n3 = "\n"), u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        var o = n(1).parseAttrs, i = function() {
+          function t2(e3, n3) {
+            var r2 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {}, o2 = r2.parentTag, i3 = o2 === void 0 ? "" : o2, u = r2.leadingSpace, c = u === void 0 ? "" : u, a = r2.layer, f = a === void 0 ? 1 : a, l = r2.isFirstTag, p = l !== void 0 && l, s = r2.prevTagName, y = s === void 0 ? "" : s, b = r2.nextTagName, h = b === void 0 ? "" : b;
+            r2.match, r2.intendSpace;
+            if (function(t3, e4) {
+              if (!(t3 instanceof e4))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, t2), this.tagName = n3, this.rawStr = e3, this.parentTag = i3, this.isFirstTag = p, this.prevTagName = y, this.nextTagName = h, this.leadingSpace = c, this.layer = f, this.__detectStr__(e3, this.tagName)) {
+              var g = this.__fetchTagAttr__(e3).attr;
+              this.attrs = g;
+            } else
+              this.attrs = {};
+          }
+          var e2, n2, i2;
+          return e2 = t2, (n2 = [{ key: "__detectStr__", value: function(t3, e3) {
+            if (t3[0] !== "<")
+              return console.error("Not a valid tag, current tag name: ".concat(this.tagName, ", tag content: ").concat(t3)), false;
+            for (var n3 = "", r2 = false, o2 = 1; o2 < t3.length && t3[o2] !== ">"; o2++)
+              !r2 && /(\s|\/)/.test(t3[o2]) && (r2 = true), r2 || (n3 += t3[o2]);
+            return n3 === e3 || (console.warn("Tag is not match tagName, tagName in str is " + n3 + ", which tagName passed from parent is " + e3), false);
+          } }, { key: "__fetchTagAttr__", value: function(t3) {
+            for (var e3 = "", n3 = 1; n3 < t3.length && t3[n3] !== ">"; n3++)
+              e3 += t3[n3];
+            return { attr: o(e3) };
+          } }, { key: "beforeParse", value: function() {
+            return "";
+          } }, { key: "beforeMergeSpace", value: function(t3) {
+            return t3;
+          } }, { key: "afterMergeSpace", value: function(t3) {
+            return t3;
+          } }, { key: "beforeReturn", value: function(t3) {
+            return t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", e3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "", n3 = this.beforeParse();
+            return n3 = t3 + (n3 = this.beforeMergeSpace(n3)) + e3, n3 = this.afterMergeSpace(n3), n3 = this.beforeReturn(n3);
+          } }]) && r(e2.prototype, n2), i2 && r(e2, i2), t2;
+        }();
+        t.exports = i;
+      }, function(t, e) {
+        function n(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        var r = function() {
+          function t2() {
+            var e3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {}, n2 = e3.skipTags, r3 = n2 === void 0 ? [] : n2, o2 = e3.emptyTags, i2 = o2 === void 0 ? [] : o2, u3 = e3.ignoreTags, c = u3 === void 0 ? [] : u3, a = e3.aliasTags, f = a === void 0 ? {} : a;
+            !function(t3, e4) {
+              if (!(t3 instanceof e4))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, t2), this.options = { skipTags: r3, emptyTags: i2, ignoreTags: c, aliasTags: f };
+          }
+          var e2, r2, u2;
+          return e2 = t2, (r2 = [{ key: "get", value: function() {
+            return this.options;
+          } }, { key: "clear", value: function() {
+            this.options = {};
+          } }, { key: "set", value: function(t3, e3) {
+            if (Object.prototype.toString.call(t3) === "[object Object]")
+              for (var n2 in t3)
+                t3.hasOwnProperty(n2) && (e3 ? this.options[n2] = t3[n2] : o(this.options, t3, n2));
+          } }, { key: "reset", value: function() {
+            this.options = JSON.parse(JSON.stringify(i));
+          } }]) && n(e2.prototype, r2), u2 && n(e2, u2), t2;
+        }();
+        function o(t2, e2, n2) {
+          if (t2[n2] != null) {
+            var r2 = Array.isArray(t2[n2]), o2 = Object.prototype.toString.call(t2[n2]) === "[object Object]";
+            t2[n2] = r2 ? t2[n2].concat(e2[n2]) : o2 ? Object.assign(t2[n2], e2[n2]) : e2[n2];
+          } else
+            t2[n2] = e2[n2];
+        }
+        var i = { ignoreTags: ["", "style", "head", "!doctype", "form", "svg", "noscript", "script", "meta"], skipTags: ["div", "html", "body", "nav", "section", "footer", "main", "aside", "article", "header"], emptyTags: [], aliasTags: { figure: "p", dl: "p", dd: "p", dt: "p", figcaption: "p" } }, u = new r(JSON.parse(JSON.stringify(i)));
+        t.exports = u;
+      }, function(t, e) {
+        function n(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        var r = function() {
+          function t2(e3) {
+            var n2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__ignore__", r3 = (arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {}).parentTag, o2 = r3 === void 0 ? "" : r3;
+            !function(t3, e4) {
+              if (!(t3 instanceof e4))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, t2), this.tagName = n2, this.parentTag = o2;
+          }
+          var e2, r2, o;
+          return e2 = t2, (r2 = [{ key: "exec", value: function() {
+            return "";
+          } }]) && n(e2.prototype, r2), o && n(e2, o), t2;
+        }();
+        t.exports = r;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          if (!(t2 instanceof e2))
+            throw new TypeError("Cannot call a class as a function");
+        }
+        function i(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function u(t2, e2, n2) {
+          return e2 && i(t2.prototype, e2), n2 && i(t2, n2), t2;
+        }
+        function c(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          if (typeof e2 !== "function" && e2 !== null)
+            throw new TypeError("Super expression must either be null or a function");
+          t2.prototype = Object.create(e2 && e2.prototype, { constructor: { value: t2, writable: true, configurable: true } }), e2 && p(t2, e2);
+        }
+        function p(t2, e2) {
+          return (p = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var s = n(0), y = n(3), b = function(t2) {
+          function e2(t3) {
+            var n2, r2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__nomatch__";
+            return o(this, e2), (n2 = c(this, f(e2).call(this, t3, r2))).tagName = r2, n2;
+          }
+          return l(e2, s), u(e2, [{ key: "beforeMergeSpace", value: function(t3) {
+            return "<".concat(this.tagName, ">").concat(t3, "</").concat(this.tagName, ">");
+          } }, { key: "exec", value: function() {
+            return a(f(e2.prototype), "exec", this).call(this, "", "");
+          } }]), e2;
+        }(), h = function(t2) {
+          function e2(t3) {
+            var n2, r2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__nomatchselfclose__";
+            return o(this, e2), (n2 = c(this, f(e2).call(this, t3, r2))).tagName = r2, n2.str = t3, n2;
+          }
+          return l(e2, y), u(e2, [{ key: "exec", value: function() {
+            return "<".concat(this.tagName, " />");
+          } }]), e2;
+        }();
+        t.exports = { __NoMatch__: b, __NoMatchSelfClose__: h };
+      }, function(t, e, n) {
+        var r = n(17), o = { html: true, body: true, p: true, div: true, pre: true, section: true, blockquote: true, aside: true, li: true, ul: true, ol: true, form: true, hr: true, h1: true, h2: true, h3: true, h4: true, h5: true, h6: true, dl: true, dd: true, dt: true, br: true };
+        t.exports = function(t2) {
+          if (!t2)
+            return false;
+          var e2 = r(t2);
+          return !!o[e2];
+        };
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          if (!(t2 instanceof e2))
+            throw new TypeError("Cannot call a class as a function");
+        }
+        function i(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function u(t2, e2, n2) {
+          return e2 && i(t2.prototype, e2), n2 && i(t2, n2), t2;
+        }
+        function c(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          if (typeof e2 !== "function" && e2 !== null)
+            throw new TypeError("Super expression must either be null or a function");
+          t2.prototype = Object.create(e2 && e2.prototype, { constructor: { value: t2, writable: true, configurable: true } }), e2 && p(t2, e2);
+        }
+        function p(t2, e2) {
+          return (p = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var s = n(0), y = n(3), b = n(1), h = b.needIndependentLine, g = b.getRealTagName, v = function(t2) {
+          function e2(t3) {
+            var n2, r2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__skip__", i2 = arguments.length > 2 ? arguments[2] : void 0;
+            return o(this, e2), (n2 = c(this, f(e2).call(this, t3, r2, i2))).noNeedWrap = ["td", "th"], n2.tagName = r2, n2;
+          }
+          return l(e2, s), u(e2, [{ key: "exec", value: function() {
+            var t3 = h(g(this.tagName)) && !this.noNeedWrap.includes(this.parentTag), n2 = t3 ? "\n" : "", r2 = t3 ? "\n" : "";
+            return a(f(e2.prototype), "exec", this).call(this, n2, r2);
+          } }]), e2;
+        }(), d = function(t2) {
+          function e2(t3) {
+            var n2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__skipselfclose__", r2 = arguments.length > 2 ? arguments[2] : void 0;
+            return o(this, e2), c(this, f(e2).call(this, t3, n2, r2));
+          }
+          return l(e2, y), u(e2, [{ key: "exec", value: function() {
+            return this.str;
+          } }]), e2;
+        }();
+        t.exports = { __Skip__: v, __SkipSelfClose__: d };
+      }, function(t, e) {
+        t.exports = { SINGLE: "\u2608", DOUBLE: "\u2608\u2608", TRIPLE: "\u2608\u2608\u2608" };
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function i(t2, e2) {
+          if (!(t2 instanceof e2))
+            throw new TypeError("Cannot call a class as a function");
+        }
+        function u(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function c(t2, e2, n2) {
+          return e2 && u(t2.prototype, e2), n2 && u(t2, n2), t2;
+        }
+        function a(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function f(t2, e2, n2) {
+          return (f = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = l(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function l(t2) {
+          return (l = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function p(t2, e2) {
+          if (typeof e2 !== "function" && e2 !== null)
+            throw new TypeError("Super expression must either be null or a function");
+          t2.prototype = Object.create(e2 && e2.prototype, { constructor: { value: t2, writable: true, configurable: true } }), e2 && s(t2, e2);
+        }
+        function s(t2, e2) {
+          return (s = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var y = n(0), b = n(3), h = function(t2) {
+          function e2(t3) {
+            var n2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__empty__", r2 = arguments.length > 2 ? arguments[2] : void 0;
+            return i(this, e2), a(this, l(e2).call(this, t3, n2, r2));
+          }
+          return p(e2, y), c(e2, [{ key: "slim", value: function(t3) {
+            return t3;
+          } }, { key: "parseValidSubTag", value: function(t3, n2, r2) {
+            return new e2(t3, n2, function(t4) {
+              for (var e3 = 1; e3 < arguments.length; e3++) {
+                var n3 = arguments[e3] != null ? arguments[e3] : {}, r3 = Object.keys(n3);
+                typeof Object.getOwnPropertySymbols === "function" && (r3 = r3.concat(Object.getOwnPropertySymbols(n3).filter(function(t5) {
+                  return Object.getOwnPropertyDescriptor(n3, t5).enumerable;
+                }))), r3.forEach(function(e4) {
+                  o(t4, e4, n3[e4]);
                 });
-                return;
+              }
+              return t4;
+            }({}, r2)).exec();
+          } }, { key: "parseOnlyString", value: function(t3, e3, n2) {
+            return t3;
+          } }, { key: "exec", value: function() {
+            return f(l(e2.prototype), "exec", this).call(this, "", "");
+          } }]), e2;
+        }(), g = function(t2) {
+          function e2(t3) {
+            var n2, r2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__emptyselfclose__";
+            return i(this, e2), (n2 = a(this, l(e2).call(this, t3, r2))).tagName = r2, n2;
+          }
+          return p(e2, b), c(e2, [{ key: "exec", value: function() {
+            return f(l(e2.prototype), "exec", this).call(this, "", "");
+          } }]), e2;
+        }();
+        t.exports = { __Empty__: h, __EmptySelfClose__: g };
+      }, function(t, e) {
+        var n = { img: true, hr: true, input: true, br: true, meta: true, link: true, "!doctype": true, base: true, col: true, area: true, param: true, object: true, embed: true, keygen: true, source: true };
+        t.exports = function(t2) {
+          return !!n[t2.toLowerCase()];
+        };
+      }, function(t, e, n) {
+        function r(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        var o = n(1).extraEscape, i = n(7), u = function() {
+          function t2(e3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "__nomatch__", r2 = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {}, o2 = r2.keepFormat, i2 = o2 !== void 0 && o2, u3 = r2.prevTagName, c = u3 === void 0 ? "" : u3, a = r2.nextTagName, f = a === void 0 ? "" : a, l = r2.parentTag, p = l === void 0 ? "" : l, s = r2.calcLeading, y = s !== void 0 && s, b = r2.layer, h = b === void 0 ? 1 : b, g = r2.leadingSpace, v = g === void 0 ? "" : g;
+            !function(t3, e4) {
+              if (!(t3 instanceof e4))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, t2), this.tagName = n3, this.nextTagName = f, this.prevTagName = c, this.parentTag = p, this.keepFormat = i2, this.calcLeading = y, this.leadingSpace = v, this.layer = h, this.rawStr = e3;
+          }
+          var e2, n2, u2;
+          return e2 = t2, (n2 = [{ key: "slim", value: function(t3) {
+            if (this.keepFormat)
+              return t3;
+            var e3 = t3.replace(/\s+/g, " ");
+            return this.prevTagName && i(this.prevTagName) && (e3 = e3.trimLeft()), this.nextTagName && i(this.nextTagName) && (e3 = e3.trimRight()), e3;
+          } }, { key: "beforeReturn", value: function(t3) {
+            return this.keepFormat ? t3 : this.calcLeading ? this.leadingSpace + o(t3) : o(t3);
+          } }, { key: "exec", value: function() {
+            var t3 = this.rawStr;
+            return t3 = this.slim(t3), t3 = this.beforeReturn(t3);
+          } }]) && r(e2.prototype, n2), u2 && r(e2, u2), t2;
+        }();
+        t.exports = u;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "strong", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = i(this, c(e2).call(this, t3, r3, o2))).layer = 1, n3;
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "**" + t3 + "**";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "del";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "~~" + t3 + "~~";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "em";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "*" + t3 + "*";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "th", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = i(this, c(e2).call(this, t3, r3, o2))).tagName = r3, n3;
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return t3 + "|";
+          } }, { key: "parseValidSubTag", value: function(t3, n3, r3) {
+            return n3 === "ul" || n3 === "ol" || n3 === "table" || n3 === "pre" ? t3.replace(/([\n\r])/g, "") : u(c(e2.prototype), "parseValidSubTag", this).call(this, t3, n3, r3);
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        var r = n(4);
+        t.exports = function(t2) {
+          if (!t2)
+            return t2;
+          var e2 = r.get().aliasTags;
+          return e2[t2] != null ? e2[t2] : t2;
+        };
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "a", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            var e3 = this.attrs.href;
+            return e3 || (e3 = ""), "[".concat(t3, "](").concat(e3, ")");
+          } }, { key: "parseOnlyString", value: function(t3, n3, r3) {
+            return this.parentTag === "tbody" || this.parentTag === "thead" ? t3 : u(c(e2.prototype), "parseOnlyString", this).call(this, t3, n3, r3);
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(13), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "b", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "exec", value: function(t3, n3) {
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2) {
+          for (var e2 = 1; e2 < arguments.length; e2++) {
+            var n2 = arguments[e2] != null ? arguments[e2] : {}, r2 = Object.keys(n2);
+            typeof Object.getOwnPropertySymbols === "function" && (r2 = r2.concat(Object.getOwnPropertySymbols(n2).filter(function(t3) {
+              return Object.getOwnPropertyDescriptor(n2, t3).enumerable;
+            }))), r2.forEach(function(e3) {
+              i(t2, e3, n2[e3]);
+            });
+          }
+          return t2;
+        }
+        function i(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function u(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function c(t2) {
+          if (t2 === void 0)
+            throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+          return t2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          return (l = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var p = n(7), s = n(0), y = n(1).findTagClass, b = function(t2) {
+          function e2(t3) {
+            var n3, o2, i3, u2 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "blockquote", a2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), o2 = this, (n3 = !(i3 = f(e2).call(this, t3, u2, a2)) || r(i3) !== "object" && typeof i3 !== "function" ? c(o2) : i3).match = n3.match || ">", n3.fillPerLine = n3.fillPerLine.bind(c(n3)), n3;
+          }
+          var n2, i2, b2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && l(t3, e3);
+          }(e2, s), n2 = e2, (i2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            if (t3.trim() === "")
+              return "";
+            var e3 = this.match + " " + t3;
+            return this.calcLeading ? this.leadingSpace + e3 : e3;
+          } }, { key: "afterMergeSpace", value: function(t3) {
+            for (var e3 = this, n3 = t3.split("\n"), r2 = n3.length - 1; r2 >= 0; r2--)
+              r2 < n3.length - 1 && n3[r2].trim() === ">" && n3[r2 + 1].trim() === ">" && n3.splice(r2, 1);
+            return (n3 = n3.map(function(t4) {
+              return t4 === "" ? "" : e3.fillPerLine(t4);
+            })).join("\n");
+          } }, { key: "beforeReturn", value: function(t3) {
+            return t3.replace("\n\n", "\n");
+          } }, { key: "fillPerLine", value: function(t3) {
+            var e3 = ">";
+            if (this.calcLeading && (e3 = this.leadingSpace + ">"), !t3.startsWith(e3)) {
+              var n3 = this.match + " " + t3;
+              return this.calcLeading ? this.leadingSpace + n3 : n3;
+            }
+            return t3;
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            var r2;
+            e3 === "blockquote" ? r2 = new (y(e3))(t3, e3, o({}, n3, { calcLeading: this.calcLeading, match: this.match + ">", noExtraLine: true })) : r2 = new (y(e3))(t3, e3, o({}, n3, { noExtraLine: true }));
+            var i3 = r2.exec(), u2 = "";
+            this.calcLeading && (u2 = this.leadingSpace);
+            var c2 = p(n3.prevTagName) && n3.prevTagName !== "br", a2 = p(n3.nextTagName) && n3.nextTagName !== "br", f2 = p(e3) && e3 !== "br";
+            return this.isFirstTag ? i3.trimLeft().replace(u2, "") : f2 ? (i3 = u2 + this.match + i3, c2 || (i3 = "\n" + i3), !a2 && n3.afterNextTagStr && n3.afterNextTagStr.trim() && (i3 += this.match + "\n"), i3) : c2 ? u2 + this.match + "\n" + i3 : i3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return a(f(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && u(n2.prototype, i2), b2 && u(n2, b2), e2;
+        }();
+        t.exports = b;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2) {
+          return (u = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function c(t2, e2) {
+          return (c = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var a = n(3), f = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "b", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, u(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, f2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && c(t3, e3);
+          }(e2, a), n2 = e2, (r2 = [{ key: "exec", value: function(t3) {
+            return "  " + (arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n");
+          } }]) && o(n2.prototype, r2), f2 && o(n2, f2), e2;
+        }();
+        t.exports = f;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2) {
+          for (var e2 = 1; e2 < arguments.length; e2++) {
+            var n2 = arguments[e2] != null ? arguments[e2] : {}, r2 = Object.keys(n2);
+            typeof Object.getOwnPropertySymbols === "function" && (r2 = r2.concat(Object.getOwnPropertySymbols(n2).filter(function(t3) {
+              return Object.getOwnPropertyDescriptor(n2, t3).enumerable;
+            }))), r2.forEach(function(e3) {
+              i(t2, e3, n2[e3]);
+            });
+          }
+          return t2;
+        }
+        function i(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function u(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function c(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          return (l = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var p = n(0), s = (n(8).__Skip__, n(1)), y = s.findTagClass, b = s.unescape, h = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "code", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = c(this, f(e2).call(this, t3, r3, o2))).match = n3.match == null ? "`" : n3.match, n3.noWrap = n3.match === "`", n3.layer = 1, n3;
+          }
+          var n2, r2, i2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && l(t3, e3);
+          }(e2, p), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            var e3, n3;
+            return this.match !== "" && this.match !== "`" ? (e3 = this.match + " ", n3 = " " + this.match) : (e3 = this.match, n3 = this.match), e3 + t3 + n3;
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            return e3 === "pre" ? new (y(e3))(t3, e3, o({}, n3, { language: "", match: "" })).exec("", "\n") : new (y(e3))(t3, e3, o({}, n3, { keepFormat: this.keepFormat, noWrap: this.noWrap })).exec("", "");
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            if (this.match !== "" && t3) {
+              var r3 = 1;
+              (t3.startsWith("`") || t3.endsWith("`")) && (r3 = 2, (t3.startsWith("``") || t3.endsWith("``")) && (r3 = 3)), this.match = "`".repeat(r3);
+            }
+            return b(t3);
+          } }, { key: "slim", value: function(t3) {
+            return this.keepFormat ? t3 : t3.trim();
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return a(f(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && u(n2.prototype, r2), i2 && u(n2, i2), e2;
+        }();
+        t.exports = h;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h1";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "# " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h2";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "## " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h3";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "### " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h4";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "#### " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h5";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "##### " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(2), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "h6";
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "###### " + t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(3), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "hr", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function() {
+            return this.leadingSpace + "---";
+          } }, { key: "beforeReturn", value: function(t3) {
+            return t3.replace(/^(\n\s*)+/, "\n\n").replace(/(\n\s*)+$/, "\n\n"), t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(15), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "i", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "exec", value: function(t3, n3) {
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(3), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "img", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function() {
+            var t3 = this.attrs, e3 = t3.src, n3 = t3.alt;
+            return n3 || (n3 = ""), e3 || (e3 = ""), "![".concat(n3, "](").concat(e3, ")");
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(3), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "input", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function() {
+            var t3 = this.attrs, e3 = t3.type, n3 = t3.checked;
+            return this.parentTag === "li" && e3 === "checkbox" ? n3 != null ? "[x] " : "[ ] " : "";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2) {
+          for (var e2 = 1; e2 < arguments.length; e2++) {
+            var n2 = arguments[e2] != null ? arguments[e2] : {}, r2 = Object.keys(n2);
+            typeof Object.getOwnPropertySymbols === "function" && (r2 = r2.concat(Object.getOwnPropertySymbols(n2).filter(function(t3) {
+              return Object.getOwnPropertyDescriptor(n2, t3).enumerable;
+            }))), r2.forEach(function(e3) {
+              i(t2, e3, n2[e3]);
+            });
+          }
+          return t2;
+        }
+        function i(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function u(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function c(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          return (l = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var p = n(0), s = n(1).findTagClass, y = n(7), b = n(9), h = b.DOUBLE, g = b.TRIPLE, v = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "li", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = c(this, f(e2).call(this, t3, r3, o2))).match = n3.match || "* ", n3.extraGap = "", n3;
+          }
+          var n2, r2, i2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && l(t3, e3);
+          }(e2, p), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return this.extraGap + this.leadingSpace + this.match + t3;
+          } }, { key: "__calcNextLeading__", value: function() {
+            return this.match.length === 2 ? h : this.match.length === 3 ? g : this.match.length === 4 ? h : g + h;
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            var r3 = s(e3), i3 = this.__calcNextLeading__(), u2 = new r3(t3, e3, o({}, n3, { calcLeading: true, leadingSpace: this.leadingSpace + i3, layer: this.layer + 1 })).exec();
+            return e3 === "p" && (this.extraGap = "\n"), this.isFirstTag ? u2.trimLeft().replace(this.leadingSpace + i3, "") : u2;
+          } }, { key: "parseOnlyString", value: function(t3, n3, r3) {
+            var i3 = false;
+            y(r3.prevTagName) && (i3 = true);
+            var u2 = this.__calcNextLeading__(), c2 = a(f(e2.prototype), "parseOnlyString", this).call(this, t3, n3, o({}, r3, { calcLeading: i3, leadingSpace: this.leadingSpace + u2, layer: this.layer + 1 }));
+            return this.isFirstTag ? c2.replace(this.leadingSpace + u2, "") : c2;
+          } }, { key: "beforeReturn", value: function(t3) {
+            return a(f(e2.prototype), "beforeReturn", this).call(this, t3);
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return a(f(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && u(n2.prototype, r2), i2 && u(n2, i2), e2;
+        }();
+        t.exports = v;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function i(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function u(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function c(t2, e2, n2) {
+          return (c = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = a(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function a(t2) {
+          return (a = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function f(t2, e2) {
+          return (f = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var l = n(0), p = n(5), s = n(1).findTagClass, y = n(4).get().aliasTags, b = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "ol", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = u(this, a(e2).call(this, t3, r3, o2))).count = n3.attrs.start || 1, n3;
+          }
+          var n2, r2, b2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && f(t3, e3);
+          }(e2, l), n2 = e2, (r2 = [{ key: "parseValidSubTag", value: function(t3, e3, n3) {
+            var r3 = s(e3);
+            if (e3 !== "li" && y[e3] !== "li" && r3 !== p)
+              return console.error("Should not have tags except <li> inside ol, current tag is " + e3 + ", current tagStr is" + t3), "";
+            var i2 = this.count + ". ", u2 = new r3(t3, e3, function(t4) {
+              for (var e4 = 1; e4 < arguments.length; e4++) {
+                var n4 = arguments[e4] != null ? arguments[e4] : {}, r4 = Object.keys(n4);
+                typeof Object.getOwnPropertySymbols === "function" && (r4 = r4.concat(Object.getOwnPropertySymbols(n4).filter(function(t5) {
+                  return Object.getOwnPropertyDescriptor(n4, t5).enumerable;
+                }))), r4.forEach(function(e5) {
+                  o(t4, e5, n4[e5]);
+                });
+              }
+              return t4;
+            }({}, n3, { calcLeading: true, leadingSpace: this.leadingSpace, layer: this.layer, match: i2 }));
+            return this.count++, u2.exec("", "\n");
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return "";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return c(a(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && i(n2.prototype, r2), b2 && i(n2, b2), e2;
+        }();
+        t.exports = b;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "p", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return this.calcLeading ? this.leadingSpace + t3 : t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2) {
+          for (var e2 = 1; e2 < arguments.length; e2++) {
+            var n2 = arguments[e2] != null ? arguments[e2] : {}, r2 = Object.keys(n2);
+            typeof Object.getOwnPropertySymbols === "function" && (r2 = r2.concat(Object.getOwnPropertySymbols(n2).filter(function(t3) {
+              return Object.getOwnPropertyDescriptor(n2, t3).enumerable;
+            }))), r2.forEach(function(e3) {
+              i(t2, e3, n2[e3]);
+            });
+          }
+          return t2;
+        }
+        function i(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function u(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function c(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function a(t2, e2, n2) {
+          return (a = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = f(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function f(t2) {
+          return (f = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function l(t2, e2) {
+          return (l = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var p = n(0), s = n(10), y = s.__Empty__, b = s.__EmptySelfClose__, h = n(1), g = h.findTagClass, v = h.isSelfClosing, d = h.getLanguage, m = n(9).DOUBLE, O = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "pre", o2 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = c(this, f(e2).call(this, t3, r3, o2))).indentSpace = m + m, n3.isIndent = n3.content.includes("```"), n3.match = n3.isIndent ? "" : "```", n3.language = n3.language || d(t3), n3.keepFormat = true, n3;
+          }
+          var n2, r2, i2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && l(t3, e3);
+          }(e2, p), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            var e3 = this.isIndent || this.parentTag === "code" ? "" : this.match + this.language + "\n", n3 = "";
+            return t3.endsWith("\n") || (n3 = "\n"), e3 + t3 + (this.isIndent || this.parentTag === "code" ? "" : n3 + this.match);
+          } }, { key: "fillPerLine", value: function(t3) {
+            var e3 = "";
+            return this.calcLeading && (e3 = this.leadingSpace), this.isIndent ? e3 + this.indentSpace + t3 : e3 + t3;
+          } }, { key: "afterMergeSpace", value: function(t3) {
+            var e3 = this, n3 = t3.split("\n");
+            return (n3 = n3.map(function(t4) {
+              return t4 === "" ? "" : e3.fillPerLine(t4);
+            })).join("\n");
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            return e3 === "code" ? new (g(e3))(t3, e3, o({}, n3, { match: "", language: this.language, keepFormat: true })).exec("", "") : (v(e3) ? new b(t3, e3) : new y(t3, e3, o({}, n3, { keepFormat: true }))).exec();
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return t3;
+          } }, { key: "slim", value: function(t3) {
+            return t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return a(f(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && u(n2.prototype, r2), i2 && u(n2, i2), e2;
+        }();
+        t.exports = O;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(14), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "s", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "exec", value: function(t3, n3) {
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "span", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2, n2) {
+          return e2 in t2 ? Object.defineProperty(t2, e2, { value: n2, enumerable: true, configurable: true, writable: true }) : t2[e2] = n2, t2;
+        }
+        function i(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function u(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function c(t2, e2, n2) {
+          return (c = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = a(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function a(t2) {
+          return (a = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function f(t2, e2) {
+          return (f = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var l = n(0), p = n(1), s = p.findTagClass, y = p.getTableAlign;
+        var b = function(t2) {
+          function e2(t3) {
+            var n3, r3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "table";
+            arguments.length > 2 && arguments[2];
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), (n3 = u(this, a(e2).call(this, t3, r3))).exist_thead = false, n3.exist_tbody = false, n3.empty_tbody = true, n3.tableColumnCount = function(t4) {
+              for (var e3 = "", n4 = 0; n4 < t4.length && !e3.endsWith("</tr>"); n4++)
+                e3 += t4[n4];
+              return Math.max(e3.split("</td>").length - 1, e3.split("</th>").length - 1);
+            }(n3.content), n3;
+          }
+          var n2, r2, p2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && f(t3, e3);
+          }(e2, l), n2 = e2, (r2 = [{ key: "parseValidSubTag", value: function(t3, e3, n3) {
+            return e3 === "thead" && (this.exist_thead = true), e3 === "tbody" && (this.exist_tbody = true, this.empty_tbody = false), e3 === "tr" && (this.empty_tbody = false), new (s(e3))(t3, e3, function(t4) {
+              for (var e4 = 1; e4 < arguments.length; e4++) {
+                var n4 = arguments[e4] != null ? arguments[e4] : {}, r3 = Object.keys(n4);
+                typeof Object.getOwnPropertySymbols === "function" && (r3 = r3.concat(Object.getOwnPropertySymbols(n4).filter(function(t5) {
+                  return Object.getOwnPropertyDescriptor(n4, t5).enumerable;
+                }))), r3.forEach(function(e5) {
+                  o(t4, e5, n4[e5]);
+                });
+              }
+              return t4;
+            }({}, n3, { tableColumnCount: this.tableColumnCount })).exec("", "\n");
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return "";
+          } }, { key: "beforeReturn", value: function(t3) {
+            if (!this.exist_thead && !this.exist_tbody && this.empty_tbody)
+              return "";
+            if (this.tableColumnCount === 0)
+              return "";
+            if (!this.exist_tbody) {
+              for (var e3 = y(this.content, this.tableColumnCount), n3 = "|", r3 = 0; r3 < e3.length; r3++)
+                n3 += e3[r3];
+              t3 = this.empty_tbody ? t3 + n3 + "\n" : n3 + "" + t3;
+            }
+            return this.exist_thead || (t3 = "\n" + "|".repeat(this.tableColumnCount + 1) + (t3.startsWith("\n") ? "" : "\n") + t3), t3;
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return c(a(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && i(n2.prototype, r2), p2 && i(n2, p2), e2;
+        }();
+        t.exports = b;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = n(1).getTableAlign, p = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "tbody", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, p2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            for (var e3 = l(this.content, this.tableColumnCount), n3 = "|", r3 = 0; r3 < e3.length; r3++)
+              n3 += e3[r3];
+            return n3 + "\n" + t3;
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return "";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), p2 && o(n2, p2), e2;
+        }();
+        t.exports = p;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(16), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "td", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "parseValidSubTag", value: function(t3, n3, r3) {
+            return n3 === "ul" || n3 === "ol" || n3 === "table" || n3 === "pre" ? t3.replace(/([\n\r])/g, "") : u(c(e2.prototype), "parseValidSubTag", this).call(this, t3, n3, r3);
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "thead", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, l2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), l2 && o(n2, l2), e2;
+        }();
+        t.exports = l;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = n(5), p = n(1).findTagClass, s = n(4).get().aliasTags, y = function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "tr", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, y2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeMergeSpace", value: function(t3) {
+            return "|" + t3;
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            var r3 = p(e3);
+            return e3 !== "td" && e3 !== "th" && s[e3] !== "td" && s[e3] !== "th" && r3 !== l ? (console.error("Should not have tags except <td> or <th> inside <tr>, current tag is ".concat(e3, " have been ignore.")), "") : new r3(t3, e3, n3).exec("", "");
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return "";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), y2 && o(n2, y2), e2;
+        }();
+        t.exports = y;
+      }, function(t, e, n) {
+        function r(t2) {
+          return (r = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(t3) {
+            return typeof t3;
+          } : function(t3) {
+            return t3 && typeof Symbol === "function" && t3.constructor === Symbol && t3 !== Symbol.prototype ? "symbol" : typeof t3;
+          })(t2);
+        }
+        function o(t2, e2) {
+          for (var n2 = 0; n2 < e2.length; n2++) {
+            var r2 = e2[n2];
+            r2.enumerable = r2.enumerable || false, r2.configurable = true, "value" in r2 && (r2.writable = true), Object.defineProperty(t2, r2.key, r2);
+          }
+        }
+        function i(t2, e2) {
+          return !e2 || r(e2) !== "object" && typeof e2 !== "function" ? function(t3) {
+            if (t3 === void 0)
+              throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+            return t3;
+          }(t2) : e2;
+        }
+        function u(t2, e2, n2) {
+          return (u = typeof Reflect !== "undefined" && Reflect.get ? Reflect.get : function(t3, e3, n3) {
+            var r2 = function(t4, e4) {
+              for (; !Object.prototype.hasOwnProperty.call(t4, e4) && (t4 = c(t4)) !== null; )
+                ;
+              return t4;
+            }(t3, e3);
+            if (r2) {
+              var o2 = Object.getOwnPropertyDescriptor(r2, e3);
+              return o2.get ? o2.get.call(n3) : o2.value;
+            }
+          })(t2, e2, n2 || t2);
+        }
+        function c(t2) {
+          return (c = Object.setPrototypeOf ? Object.getPrototypeOf : function(t3) {
+            return t3.__proto__ || Object.getPrototypeOf(t3);
+          })(t2);
+        }
+        function a(t2, e2) {
+          return (a = Object.setPrototypeOf || function(t3, e3) {
+            return t3.__proto__ = e3, t3;
+          })(t2, e2);
+        }
+        var f = n(0), l = n(5), p = n(1).findTagClass, s = n(4).get().aliasTags, y = (n(9).DOUBLE, function(t2) {
+          function e2(t3) {
+            var n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "ul", r3 = arguments.length > 2 ? arguments[2] : void 0;
+            return function(t4, e3) {
+              if (!(t4 instanceof e3))
+                throw new TypeError("Cannot call a class as a function");
+            }(this, e2), i(this, c(e2).call(this, t3, n3, r3));
+          }
+          var n2, r2, y2;
+          return function(t3, e3) {
+            if (typeof e3 !== "function" && e3 !== null)
+              throw new TypeError("Super expression must either be null or a function");
+            t3.prototype = Object.create(e3 && e3.prototype, { constructor: { value: t3, writable: true, configurable: true } }), e3 && a(t3, e3);
+          }(e2, f), n2 = e2, (r2 = [{ key: "beforeReturn", value: function(t3) {
+            return u(c(e2.prototype), "beforeReturn", this).call(this, t3);
+          } }, { key: "parseValidSubTag", value: function(t3, e3, n3) {
+            var r3 = p(e3);
+            return e3 !== "li" && s[e3] !== "li" && r3 !== l ? (console.error("Should not have tags except <li> inside ul, current tag is " + e3 + ", current tagStr is" + t3), "") : new r3(t3, e3, { calcLeading: true, leadingSpace: this.leadingSpace, layer: this.layer, match: "* " }).exec("", "\n");
+          } }, { key: "parseOnlyString", value: function(t3, e3, n3) {
+            return "";
+          } }, { key: "exec", value: function() {
+            var t3 = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "\n", n3 = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "\n";
+            return u(c(e2.prototype), "exec", this).call(this, t3, n3);
+          } }]) && o(n2.prototype, r2), y2 && o(n2, y2), e2;
+        }());
+        t.exports = y;
+      }, function(t, e, n) {
+        function r(t2, e2) {
+          return function(t3) {
+            if (Array.isArray(t3))
+              return t3;
+          }(t2) || function(t3, e3) {
+            var n2 = [], r2 = true, o2 = false, i2 = void 0;
+            try {
+              for (var u2, c2 = t3[Symbol.iterator](); !(r2 = (u2 = c2.next()).done) && (n2.push(u2.value), !e3 || n2.length !== e3); r2 = true)
+                ;
+            } catch (a2) {
+              o2 = true, i2 = a2;
+            } finally {
+              try {
+                r2 || c2.return == null || c2.return();
+              } finally {
+                if (o2)
+                  throw i2;
               }
             }
-            build(value, fullKey);
-          });
-          stack.pop();
-        } else {
-          formData.append(parentKey, convertValue(data));
+            return n2;
+          }(t2, e2) || function() {
+            throw new TypeError("Invalid attempt to destructure non-iterable instance");
+          }();
         }
-      }
-      build(obj);
-      return formData;
-    }
-    module2.exports = toFormData;
-  }
-});
-
-// node_modules/axios/lib/core/settle.js
-var require_settle = __commonJS({
-  "node_modules/axios/lib/core/settle.js"(exports, module2) {
-    "use strict";
-    var AxiosError = require_AxiosError();
-    module2.exports = function settle(resolve, reject, response) {
-      var validateStatus = response.config.validateStatus;
-      if (!response.status || !validateStatus || validateStatus(response.status)) {
-        resolve(response);
-      } else {
-        reject(new AxiosError("Request failed with status code " + response.status, [AxiosError.ERR_BAD_REQUEST, AxiosError.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4], response.config, response.request, response));
-      }
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/cookies.js
-var require_cookies = __commonJS({
-  "node_modules/axios/lib/helpers/cookies.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    module2.exports = utils.isStandardBrowserEnv() ? function standardBrowserEnv() {
-      return {
-        write: function write(name, value, expires, path, domain, secure) {
-          var cookie = [];
-          cookie.push(name + "=" + encodeURIComponent(value));
-          if (utils.isNumber(expires)) {
-            cookie.push("expires=" + new Date(expires).toGMTString());
+        var o = n(1), i = o.findTagClass, u = o.findValidTag, c = o.unescape, a = o.clearComment, f = o.needIndependentLine, l = n(4);
+        t.exports = function(t2, e2) {
+          var n2 = arguments.length > 2 && arguments[2] !== void 0 && arguments[2];
+          l.reset(), l.set(e2, n2), t2 = (t2 = (t2 = a(t2)).trim()).replace(/(\r\n)/g, "").replace(/&nbsp;/g, "");
+          for (var o2 = u(t2), p = "", s = null, y = r(o2(), 2), b = y[0], h = y[1]; h !== ""; ) {
+            if (b != null) {
+              var g = new (i(b))(h, b).exec(), v = f(s);
+              !f(b) || v || p.endsWith("\n") ? p += g : p += "\n" + g;
+            } else
+              p = (p += h).replace(/(\n\s*)+$/, "\n");
+            s = b;
+            var d = o2();
+            b = d[0], h = d[1];
           }
-          if (utils.isString(path)) {
-            cookie.push("path=" + path);
-          }
-          if (utils.isString(domain)) {
-            cookie.push("domain=" + domain);
-          }
-          if (secure === true) {
-            cookie.push("secure");
-          }
-          document.cookie = cookie.join("; ");
-        },
-        read: function read(name) {
-          var match = document.cookie.match(new RegExp("(^|;\\s*)(" + name + ")=([^;]*)"));
-          return match ? decodeURIComponent(match[3]) : null;
-        },
-        remove: function remove(name) {
-          this.write(name, "", Date.now() - 864e5);
-        }
-      };
-    }() : function nonStandardBrowserEnv() {
-      return {
-        write: function write() {
-        },
-        read: function read() {
-          return null;
-        },
-        remove: function remove() {
-        }
-      };
-    }();
-  }
-});
-
-// node_modules/axios/lib/helpers/isAbsoluteURL.js
-var require_isAbsoluteURL = __commonJS({
-  "node_modules/axios/lib/helpers/isAbsoluteURL.js"(exports, module2) {
-    "use strict";
-    module2.exports = function isAbsoluteURL(url) {
-      return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/combineURLs.js
-var require_combineURLs = __commonJS({
-  "node_modules/axios/lib/helpers/combineURLs.js"(exports, module2) {
-    "use strict";
-    module2.exports = function combineURLs(baseURL, relativeURL) {
-      return relativeURL ? baseURL.replace(/\/+$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
-    };
-  }
-});
-
-// node_modules/axios/lib/core/buildFullPath.js
-var require_buildFullPath = __commonJS({
-  "node_modules/axios/lib/core/buildFullPath.js"(exports, module2) {
-    "use strict";
-    var isAbsoluteURL = require_isAbsoluteURL();
-    var combineURLs = require_combineURLs();
-    module2.exports = function buildFullPath(baseURL, requestedURL) {
-      if (baseURL && !isAbsoluteURL(requestedURL)) {
-        return combineURLs(baseURL, requestedURL);
-      }
-      return requestedURL;
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/parseHeaders.js
-var require_parseHeaders = __commonJS({
-  "node_modules/axios/lib/helpers/parseHeaders.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var ignoreDuplicateOf = [
-      "age",
-      "authorization",
-      "content-length",
-      "content-type",
-      "etag",
-      "expires",
-      "from",
-      "host",
-      "if-modified-since",
-      "if-unmodified-since",
-      "last-modified",
-      "location",
-      "max-forwards",
-      "proxy-authorization",
-      "referer",
-      "retry-after",
-      "user-agent"
-    ];
-    module2.exports = function parseHeaders(headers) {
-      var parsed = {};
-      var key;
-      var val;
-      var i;
-      if (!headers) {
-        return parsed;
-      }
-      utils.forEach(headers.split("\n"), function parser(line) {
-        i = line.indexOf(":");
-        key = utils.trim(line.substr(0, i)).toLowerCase();
-        val = utils.trim(line.substr(i + 1));
-        if (key) {
-          if (parsed[key] && ignoreDuplicateOf.indexOf(key) >= 0) {
-            return;
-          }
-          if (key === "set-cookie") {
-            parsed[key] = (parsed[key] ? parsed[key] : []).concat([val]);
-          } else {
-            parsed[key] = parsed[key] ? parsed[key] + ", " + val : val;
-          }
-        }
-      });
-      return parsed;
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/isURLSameOrigin.js
-var require_isURLSameOrigin = __commonJS({
-  "node_modules/axios/lib/helpers/isURLSameOrigin.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    module2.exports = utils.isStandardBrowserEnv() ? function standardBrowserEnv() {
-      var msie = /(msie|trident)/i.test(navigator.userAgent);
-      var urlParsingNode = document.createElement("a");
-      var originURL;
-      function resolveURL(url) {
-        var href = url;
-        if (msie) {
-          urlParsingNode.setAttribute("href", href);
-          href = urlParsingNode.href;
-        }
-        urlParsingNode.setAttribute("href", href);
-        return {
-          href: urlParsingNode.href,
-          protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, "") : "",
-          host: urlParsingNode.host,
-          search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, "") : "",
-          hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
-          hostname: urlParsingNode.hostname,
-          port: urlParsingNode.port,
-          pathname: urlParsingNode.pathname.charAt(0) === "/" ? urlParsingNode.pathname : "/" + urlParsingNode.pathname
+          return function(t3) {
+            return t3 = (t3 = (t3 = t3.replace(/^\n+/, "")).replace(/\s+$/, "")).replace(/\u2608/g, " ");
+          }(c(p));
         };
-      }
-      originURL = resolveURL(window.location.href);
-      return function isURLSameOrigin(requestURL) {
-        var parsed = utils.isString(requestURL) ? resolveURL(requestURL) : requestURL;
-        return parsed.protocol === originURL.protocol && parsed.host === originURL.host;
-      };
-    }() : function nonStandardBrowserEnv() {
-      return function isURLSameOrigin() {
-        return true;
-      };
-    }();
-  }
-});
-
-// node_modules/axios/lib/cancel/CanceledError.js
-var require_CanceledError = __commonJS({
-  "node_modules/axios/lib/cancel/CanceledError.js"(exports, module2) {
-    "use strict";
-    var AxiosError = require_AxiosError();
-    var utils = require_utils();
-    function CanceledError(message) {
-      AxiosError.call(this, message == null ? "canceled" : message, AxiosError.ERR_CANCELED);
-      this.name = "CanceledError";
-    }
-    utils.inherits(CanceledError, AxiosError, {
-      __CANCEL__: true
-    });
-    module2.exports = CanceledError;
-  }
-});
-
-// node_modules/axios/lib/helpers/parseProtocol.js
-var require_parseProtocol = __commonJS({
-  "node_modules/axios/lib/helpers/parseProtocol.js"(exports, module2) {
-    "use strict";
-    module2.exports = function parseProtocol(url) {
-      var match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
-      return match && match[1] || "";
-    };
-  }
-});
-
-// node_modules/axios/lib/adapters/xhr.js
-var require_xhr = __commonJS({
-  "node_modules/axios/lib/adapters/xhr.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var settle = require_settle();
-    var cookies = require_cookies();
-    var buildURL = require_buildURL();
-    var buildFullPath = require_buildFullPath();
-    var parseHeaders = require_parseHeaders();
-    var isURLSameOrigin = require_isURLSameOrigin();
-    var transitionalDefaults = require_transitional();
-    var AxiosError = require_AxiosError();
-    var CanceledError = require_CanceledError();
-    var parseProtocol = require_parseProtocol();
-    module2.exports = function xhrAdapter(config) {
-      return new Promise(function dispatchXhrRequest(resolve, reject) {
-        var requestData = config.data;
-        var requestHeaders = config.headers;
-        var responseType = config.responseType;
-        var onCanceled;
-        function done() {
-          if (config.cancelToken) {
-            config.cancelToken.unsubscribe(onCanceled);
-          }
-          if (config.signal) {
-            config.signal.removeEventListener("abort", onCanceled);
-          }
+      }, function(t, e) {
+        var n = {}, r = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#x60;" };
+        for (var o in r)
+          n[r[o]] = o;
+        var i = /[&<>"'`]/g, u = RegExp(i.source), c = /&(?:amp|lt|gt|quot|#39|#x60);/g, a = RegExp(c.source), f = [[/\\/g, "\\\\"], [/\*/g, "\\*"], [/^-/g, "\\-"], [/^\+ /g, "\\+ "], [/^(=+)/g, "\\$1"], [/^(#{1,6}) /g, "\\$1 "], [/`/g, "\\`"], [/^~~~/g, "\\~~~"], [/\[/g, "\\["], [/\]/g, "\\]"], [/^>/g, "\\>"], [/_/g, "\\_"], [/^(\d+)\. /g, "$1\\. "]];
+        t.exports = { escape: function(t2) {
+          return t2 && u.test(t2) ? t2.replace(i, function(t3) {
+            return r[t3];
+          }) : t2;
+        }, extraEscape: function(t2) {
+          return f.reduce(function(t3, e2) {
+            return t3.replace(e2[0], e2[1]);
+          }, t2);
+        }, unescape: function(t2) {
+          var e2 = (arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {}).needEscape, r2 = e2 !== void 0 && e2;
+          return t2 = t2 && a.test(t2) ? t2.replace(c, function(t3) {
+            return n[t3];
+          }) : t2, r2 && (t2 = f.reduce(function(t3, e3) {
+            return t3.replace(e3[0], e3[1]);
+          }, t2)), t2;
+        } };
+      }, function(t, e, n) {
+        var r = n(11);
+        function o(t2, e2) {
+          for (var n2 = ""; e2 < t2.length && /[a-zA-Z0-9!\-]/.test(t2[e2]); )
+            n2 += t2[e2++];
+          return n2.toLowerCase();
         }
-        if (utils.isFormData(requestData) && utils.isStandardBrowserEnv()) {
-          delete requestHeaders["Content-Type"];
-        }
-        var request = new XMLHttpRequest();
-        if (config.auth) {
-          var username = config.auth.username || "";
-          var password = config.auth.password ? unescape(encodeURIComponent(config.auth.password)) : "";
-          requestHeaders.Authorization = "Basic " + btoa(username + ":" + password);
-        }
-        var fullPath = buildFullPath(config.baseURL, config.url);
-        request.open(config.method.toUpperCase(), buildURL(fullPath, config.params, config.paramsSerializer), true);
-        request.timeout = config.timeout;
-        function onloadend() {
-          if (!request) {
-            return;
-          }
-          var responseHeaders = "getAllResponseHeaders" in request ? parseHeaders(request.getAllResponseHeaders()) : null;
-          var responseData = !responseType || responseType === "text" || responseType === "json" ? request.responseText : request.response;
-          var response = {
-            data: responseData,
-            status: request.status,
-            statusText: request.statusText,
-            headers: responseHeaders,
-            config,
-            request
-          };
-          settle(function _resolve(value) {
-            resolve(value);
-            done();
-          }, function _reject(err) {
-            reject(err);
-            done();
-          }, response);
-          request = null;
-        }
-        if ("onloadend" in request) {
-          request.onloadend = onloadend;
-        } else {
-          request.onreadystatechange = function handleLoad() {
-            if (!request || request.readyState !== 4) {
-              return;
+        t.exports = function(t2) {
+          var e2 = 0;
+          return function() {
+            var n2 = "", i = null, u = 0, c = null, a = false;
+            if (e2 >= t2.length)
+              return [i, n2];
+            for (var f = e2; f < t2.length; f++) {
+              if (t2[f] === "<" && t2[f + 1] !== "/") {
+                if (n2 !== "" && i == null && !a)
+                  return e2 = f, [i, n2];
+                var l = o(t2, f + 1);
+                i == null && (i = l), i === l && u++, r(i) && (--u === 0 && (a = true), u < 0 && console.warn("Tag ".concat(i, " is abnormal")));
+              } else if (t2[f] === "<" && t2[f + 1] === "/") {
+                if (i == null) {
+                  console.warn("Tag is not integrity, current tagStr is " + t2.slice(e2));
+                  for (var p = f; p < t2.length && t2[p] !== ">"; )
+                    p++;
+                  f = p;
+                  continue;
+                }
+                i === (c = o(t2, f + 2)) && u--, u <= 0 && (a = true);
+              }
+              if (n2 += t2[f], t2[f] === ">" && a)
+                return e2 = f + 1, [i, n2];
+              f === t2.length - 1 && i !== c && (c != null && i != null && (n2 = n2.replace("<" + i + ">", "").replace("</" + c + ">", "")), i = null);
             }
-            if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf("file:") === 0)) {
-              return;
-            }
-            setTimeout(onloadend);
+            return e2 = t2.length, [i, n2];
           };
+        };
+      }, function(t, e, n) {
+        var r = n(4);
+        t.exports = function t2(e2) {
+          var o, i = arguments.length > 1 && arguments[1] !== void 0 && arguments[1], u = r.get(), c = u.skipTags, a = u.emptyTags, f = u.ignoreTags, l = u.aliasTags, p = n(11)(e2);
+          if (!i && c.includes(e2)) {
+            var s = n(8);
+            return p ? s.__SkipSelfClose__ : s.__Skip__;
+          }
+          if (!i && a.includes(e2)) {
+            var y = n(10);
+            return p ? y.__EmptySelfClose__ : y.__Empty__;
+          }
+          if (!i && f.includes(e2))
+            return n(5);
+          if (!i && l[e2] != null)
+            return t2(l[e2], i);
+          if (i)
+            o = p ? n(6).__NoMatchSelfClose__ : n(6).__NoMatch__;
+          else
+            try {
+              o = n(49)("./" + e2);
+            } catch (b) {
+              o = p ? n(6).__NoMatchSelfClose__ : n(6).__NoMatch__;
+            }
+          return o;
+        };
+      }, function(t, e, n) {
+        var r = { "./__Heading__": 2, "./__Heading__.js": 2, "./__empty__": 10, "./__empty__.js": 10, "./__ignore__": 5, "./__ignore__.js": 5, "./__nomatch__": 6, "./__nomatch__.js": 6, "./__rawString__": 12, "./__rawString__.js": 12, "./__skip__": 8, "./__skip__.js": 8, "./a": 18, "./a.js": 18, "./b": 19, "./b.js": 19, "./blockquote": 20, "./blockquote.js": 20, "./br": 21, "./br.js": 21, "./code": 22, "./code.js": 22, "./del": 14, "./del.js": 14, "./em": 15, "./em.js": 15, "./h1": 23, "./h1.js": 23, "./h2": 24, "./h2.js": 24, "./h3": 25, "./h3.js": 25, "./h4": 26, "./h4.js": 26, "./h5": 27, "./h5.js": 27, "./h6": 28, "./h6.js": 28, "./hr": 29, "./hr.js": 29, "./i": 30, "./i.js": 30, "./img": 31, "./img.js": 31, "./input": 32, "./input.js": 32, "./li": 33, "./li.js": 33, "./ol": 34, "./ol.js": 34, "./p": 35, "./p.js": 35, "./pre": 36, "./pre.js": 36, "./s": 37, "./s.js": 37, "./span": 38, "./span.js": 38, "./strong": 13, "./strong.js": 13, "./table": 39, "./table.js": 39, "./tbody": 40, "./tbody.js": 40, "./td": 41, "./td.js": 41, "./th": 16, "./th.js": 16, "./thead": 42, "./thead.js": 42, "./tr": 43, "./tr.js": 43, "./ul": 44, "./ul.js": 44 };
+        function o(t2) {
+          var e2 = i(t2);
+          return n(e2);
         }
-        request.onabort = function handleAbort() {
-          if (!request) {
-            return;
+        function i(t2) {
+          if (!n.o(r, t2)) {
+            var e2 = new Error("Cannot find module '" + t2 + "'");
+            throw e2.code = "MODULE_NOT_FOUND", e2;
           }
-          reject(new AxiosError("Request aborted", AxiosError.ECONNABORTED, config, request));
-          request = null;
-        };
-        request.onerror = function handleError() {
-          reject(new AxiosError("Network Error", AxiosError.ERR_NETWORK, config, request, request));
-          request = null;
-        };
-        request.ontimeout = function handleTimeout() {
-          var timeoutErrorMessage = config.timeout ? "timeout of " + config.timeout + "ms exceeded" : "timeout exceeded";
-          var transitional = config.transitional || transitionalDefaults;
-          if (config.timeoutErrorMessage) {
-            timeoutErrorMessage = config.timeoutErrorMessage;
-          }
-          reject(new AxiosError(timeoutErrorMessage, transitional.clarifyTimeoutError ? AxiosError.ETIMEDOUT : AxiosError.ECONNABORTED, config, request));
-          request = null;
-        };
-        if (utils.isStandardBrowserEnv()) {
-          var xsrfValue = (config.withCredentials || isURLSameOrigin(fullPath)) && config.xsrfCookieName ? cookies.read(config.xsrfCookieName) : void 0;
-          if (xsrfValue) {
-            requestHeaders[config.xsrfHeaderName] = xsrfValue;
-          }
+          return r[t2];
         }
-        if ("setRequestHeader" in request) {
-          utils.forEach(requestHeaders, function setRequestHeader(val, key) {
-            if (typeof requestData === "undefined" && key.toLowerCase() === "content-type") {
-              delete requestHeaders[key];
+        o.keys = function() {
+          return Object.keys(r);
+        }, o.resolve = i, t.exports = o, o.id = 49;
+      }, function(t, e) {
+        t.exports = function(t2) {
+          for (var e2 = {}, n = false, r = "", o = "", i = 0; i <= t2.length; i++) {
+            if (i === t2.length || /\s/.test(t2[i])) {
+              if (!n || i === t2.length) {
+                var u = r.trim();
+                u[u.length - 1] === "/" && (u = u.slice(0, u.length - 1)), u && (e2[u] = o.trim()), r = "", o = "";
+              }
             } else {
-              request.setRequestHeader(key, val);
-            }
-          });
-        }
-        if (!utils.isUndefined(config.withCredentials)) {
-          request.withCredentials = !!config.withCredentials;
-        }
-        if (responseType && responseType !== "json") {
-          request.responseType = config.responseType;
-        }
-        if (typeof config.onDownloadProgress === "function") {
-          request.addEventListener("progress", config.onDownloadProgress);
-        }
-        if (typeof config.onUploadProgress === "function" && request.upload) {
-          request.upload.addEventListener("progress", config.onUploadProgress);
-        }
-        if (config.cancelToken || config.signal) {
-          onCanceled = function(cancel) {
-            if (!request) {
-              return;
-            }
-            reject(!cancel || cancel && cancel.type ? new CanceledError() : cancel);
-            request.abort();
-            request = null;
-          };
-          config.cancelToken && config.cancelToken.subscribe(onCanceled);
-          if (config.signal) {
-            config.signal.aborted ? onCanceled() : config.signal.addEventListener("abort", onCanceled);
-          }
-        }
-        if (!requestData) {
-          requestData = null;
-        }
-        var protocol = parseProtocol(fullPath);
-        if (protocol && ["http", "https", "file"].indexOf(protocol) === -1) {
-          reject(new AxiosError("Unsupported protocol " + protocol + ":", AxiosError.ERR_BAD_REQUEST, config));
-          return;
-        }
-        request.send(requestData);
-      });
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/null.js
-var require_null = __commonJS({
-  "node_modules/axios/lib/helpers/null.js"(exports, module2) {
-    module2.exports = null;
-  }
-});
-
-// node_modules/axios/lib/defaults/index.js
-var require_defaults = __commonJS({
-  "node_modules/axios/lib/defaults/index.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var normalizeHeaderName = require_normalizeHeaderName();
-    var AxiosError = require_AxiosError();
-    var transitionalDefaults = require_transitional();
-    var toFormData = require_toFormData();
-    var DEFAULT_CONTENT_TYPE = {
-      "Content-Type": "application/x-www-form-urlencoded"
-    };
-    function setContentTypeIfUnset(headers, value) {
-      if (!utils.isUndefined(headers) && utils.isUndefined(headers["Content-Type"])) {
-        headers["Content-Type"] = value;
-      }
-    }
-    function getDefaultAdapter() {
-      var adapter;
-      if (typeof XMLHttpRequest !== "undefined") {
-        adapter = require_xhr();
-      } else if (typeof process !== "undefined" && Object.prototype.toString.call(process) === "[object process]") {
-        adapter = require_xhr();
-      }
-      return adapter;
-    }
-    function stringifySafely(rawValue, parser, encoder) {
-      if (utils.isString(rawValue)) {
-        try {
-          (parser || JSON.parse)(rawValue);
-          return utils.trim(rawValue);
-        } catch (e) {
-          if (e.name !== "SyntaxError") {
-            throw e;
-          }
-        }
-      }
-      return (encoder || JSON.stringify)(rawValue);
-    }
-    var defaults = {
-      transitional: transitionalDefaults,
-      adapter: getDefaultAdapter(),
-      transformRequest: [function transformRequest(data, headers) {
-        normalizeHeaderName(headers, "Accept");
-        normalizeHeaderName(headers, "Content-Type");
-        if (utils.isFormData(data) || utils.isArrayBuffer(data) || utils.isBuffer(data) || utils.isStream(data) || utils.isFile(data) || utils.isBlob(data)) {
-          return data;
-        }
-        if (utils.isArrayBufferView(data)) {
-          return data.buffer;
-        }
-        if (utils.isURLSearchParams(data)) {
-          setContentTypeIfUnset(headers, "application/x-www-form-urlencoded;charset=utf-8");
-          return data.toString();
-        }
-        var isObjectPayload = utils.isObject(data);
-        var contentType = headers && headers["Content-Type"];
-        var isFileList;
-        if ((isFileList = utils.isFileList(data)) || isObjectPayload && contentType === "multipart/form-data") {
-          var _FormData = this.env && this.env.FormData;
-          return toFormData(isFileList ? { "files[]": data } : data, _FormData && new _FormData());
-        } else if (isObjectPayload || contentType === "application/json") {
-          setContentTypeIfUnset(headers, "application/json");
-          return stringifySafely(data);
-        }
-        return data;
-      }],
-      transformResponse: [function transformResponse(data) {
-        var transitional = this.transitional || defaults.transitional;
-        var silentJSONParsing = transitional && transitional.silentJSONParsing;
-        var forcedJSONParsing = transitional && transitional.forcedJSONParsing;
-        var strictJSONParsing = !silentJSONParsing && this.responseType === "json";
-        if (strictJSONParsing || forcedJSONParsing && utils.isString(data) && data.length) {
-          try {
-            return JSON.parse(data);
-          } catch (e) {
-            if (strictJSONParsing) {
-              if (e.name === "SyntaxError") {
-                throw AxiosError.from(e, AxiosError.ERR_BAD_RESPONSE, this, null, this.response);
+              if (t2[i] === '"' || t2[i] === "'") {
+                n = !n;
+                continue;
               }
-              throw e;
+              if (t2[i] === "=" && !n)
+                continue;
             }
+            n ? o += t2[i] : r += t2[i];
           }
-        }
-        return data;
-      }],
-      timeout: 0,
-      xsrfCookieName: "XSRF-TOKEN",
-      xsrfHeaderName: "X-XSRF-TOKEN",
-      maxContentLength: -1,
-      maxBodyLength: -1,
-      env: {
-        FormData: require_null()
-      },
-      validateStatus: function validateStatus(status) {
-        return status >= 200 && status < 300;
-      },
-      headers: {
-        common: {
-          "Accept": "application/json, text/plain, */*"
-        }
-      }
-    };
-    utils.forEach(["delete", "get", "head"], function forEachMethodNoData(method) {
-      defaults.headers[method] = {};
-    });
-    utils.forEach(["post", "put", "patch"], function forEachMethodWithData(method) {
-      defaults.headers[method] = utils.merge(DEFAULT_CONTENT_TYPE);
-    });
-    module2.exports = defaults;
-  }
-});
-
-// node_modules/axios/lib/core/transformData.js
-var require_transformData = __commonJS({
-  "node_modules/axios/lib/core/transformData.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var defaults = require_defaults();
-    module2.exports = function transformData(data, headers, fns) {
-      var context = this || defaults;
-      utils.forEach(fns, function transform(fn) {
-        data = fn.call(context, data, headers);
-      });
-      return data;
-    };
-  }
-});
-
-// node_modules/axios/lib/cancel/isCancel.js
-var require_isCancel = __commonJS({
-  "node_modules/axios/lib/cancel/isCancel.js"(exports, module2) {
-    "use strict";
-    module2.exports = function isCancel(value) {
-      return !!(value && value.__CANCEL__);
-    };
-  }
-});
-
-// node_modules/axios/lib/core/dispatchRequest.js
-var require_dispatchRequest = __commonJS({
-  "node_modules/axios/lib/core/dispatchRequest.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var transformData = require_transformData();
-    var isCancel = require_isCancel();
-    var defaults = require_defaults();
-    var CanceledError = require_CanceledError();
-    function throwIfCancellationRequested(config) {
-      if (config.cancelToken) {
-        config.cancelToken.throwIfRequested();
-      }
-      if (config.signal && config.signal.aborted) {
-        throw new CanceledError();
-      }
-    }
-    module2.exports = function dispatchRequest(config) {
-      throwIfCancellationRequested(config);
-      config.headers = config.headers || {};
-      config.data = transformData.call(config, config.data, config.headers, config.transformRequest);
-      config.headers = utils.merge(config.headers.common || {}, config.headers[config.method] || {}, config.headers);
-      utils.forEach(["delete", "get", "head", "post", "put", "patch", "common"], function cleanHeaderConfig(method) {
-        delete config.headers[method];
-      });
-      var adapter = config.adapter || defaults.adapter;
-      return adapter(config).then(function onAdapterResolution(response) {
-        throwIfCancellationRequested(config);
-        response.data = transformData.call(config, response.data, response.headers, config.transformResponse);
-        return response;
-      }, function onAdapterRejection(reason) {
-        if (!isCancel(reason)) {
-          throwIfCancellationRequested(config);
-          if (reason && reason.response) {
-            reason.response.data = transformData.call(config, reason.response.data, reason.response.headers, config.transformResponse);
-          }
-        }
-        return Promise.reject(reason);
-      });
-    };
-  }
-});
-
-// node_modules/axios/lib/core/mergeConfig.js
-var require_mergeConfig = __commonJS({
-  "node_modules/axios/lib/core/mergeConfig.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    module2.exports = function mergeConfig(config1, config2) {
-      config2 = config2 || {};
-      var config = {};
-      function getMergedValue(target, source) {
-        if (utils.isPlainObject(target) && utils.isPlainObject(source)) {
-          return utils.merge(target, source);
-        } else if (utils.isPlainObject(source)) {
-          return utils.merge({}, source);
-        } else if (utils.isArray(source)) {
-          return source.slice();
-        }
-        return source;
-      }
-      function mergeDeepProperties(prop) {
-        if (!utils.isUndefined(config2[prop])) {
-          return getMergedValue(config1[prop], config2[prop]);
-        } else if (!utils.isUndefined(config1[prop])) {
-          return getMergedValue(void 0, config1[prop]);
-        }
-      }
-      function valueFromConfig2(prop) {
-        if (!utils.isUndefined(config2[prop])) {
-          return getMergedValue(void 0, config2[prop]);
-        }
-      }
-      function defaultToConfig2(prop) {
-        if (!utils.isUndefined(config2[prop])) {
-          return getMergedValue(void 0, config2[prop]);
-        } else if (!utils.isUndefined(config1[prop])) {
-          return getMergedValue(void 0, config1[prop]);
-        }
-      }
-      function mergeDirectKeys(prop) {
-        if (prop in config2) {
-          return getMergedValue(config1[prop], config2[prop]);
-        } else if (prop in config1) {
-          return getMergedValue(void 0, config1[prop]);
-        }
-      }
-      var mergeMap = {
-        "url": valueFromConfig2,
-        "method": valueFromConfig2,
-        "data": valueFromConfig2,
-        "baseURL": defaultToConfig2,
-        "transformRequest": defaultToConfig2,
-        "transformResponse": defaultToConfig2,
-        "paramsSerializer": defaultToConfig2,
-        "timeout": defaultToConfig2,
-        "timeoutMessage": defaultToConfig2,
-        "withCredentials": defaultToConfig2,
-        "adapter": defaultToConfig2,
-        "responseType": defaultToConfig2,
-        "xsrfCookieName": defaultToConfig2,
-        "xsrfHeaderName": defaultToConfig2,
-        "onUploadProgress": defaultToConfig2,
-        "onDownloadProgress": defaultToConfig2,
-        "decompress": defaultToConfig2,
-        "maxContentLength": defaultToConfig2,
-        "maxBodyLength": defaultToConfig2,
-        "beforeRedirect": defaultToConfig2,
-        "transport": defaultToConfig2,
-        "httpAgent": defaultToConfig2,
-        "httpsAgent": defaultToConfig2,
-        "cancelToken": defaultToConfig2,
-        "socketPath": defaultToConfig2,
-        "responseEncoding": defaultToConfig2,
-        "validateStatus": mergeDirectKeys
-      };
-      utils.forEach(Object.keys(config1).concat(Object.keys(config2)), function computeConfigValue(prop) {
-        var merge = mergeMap[prop] || mergeDeepProperties;
-        var configValue = merge(prop);
-        utils.isUndefined(configValue) && merge !== mergeDirectKeys || (config[prop] = configValue);
-      });
-      return config;
-    };
-  }
-});
-
-// node_modules/axios/lib/env/data.js
-var require_data = __commonJS({
-  "node_modules/axios/lib/env/data.js"(exports, module2) {
-    module2.exports = {
-      "version": "0.27.2"
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/validator.js
-var require_validator = __commonJS({
-  "node_modules/axios/lib/helpers/validator.js"(exports, module2) {
-    "use strict";
-    var VERSION = require_data().version;
-    var AxiosError = require_AxiosError();
-    var validators = {};
-    ["object", "boolean", "number", "function", "string", "symbol"].forEach(function(type, i) {
-      validators[type] = function validator(thing) {
-        return typeof thing === type || "a" + (i < 1 ? "n " : " ") + type;
-      };
-    });
-    var deprecatedWarnings = {};
-    validators.transitional = function transitional(validator, version, message) {
-      function formatMessage(opt, desc) {
-        return "[Axios v" + VERSION + "] Transitional option '" + opt + "'" + desc + (message ? ". " + message : "");
-      }
-      return function(value, opt, opts) {
-        if (validator === false) {
-          throw new AxiosError(formatMessage(opt, " has been removed" + (version ? " in " + version : "")), AxiosError.ERR_DEPRECATED);
-        }
-        if (version && !deprecatedWarnings[opt]) {
-          deprecatedWarnings[opt] = true;
-          console.warn(formatMessage(opt, " has been deprecated since v" + version + " and will be removed in the near future"));
-        }
-        return validator ? validator(value, opt, opts) : true;
-      };
-    };
-    function assertOptions(options, schema, allowUnknown) {
-      if (typeof options !== "object") {
-        throw new AxiosError("options must be an object", AxiosError.ERR_BAD_OPTION_VALUE);
-      }
-      var keys = Object.keys(options);
-      var i = keys.length;
-      while (i-- > 0) {
-        var opt = keys[i];
-        var validator = schema[opt];
-        if (validator) {
-          var value = options[opt];
-          var result = value === void 0 || validator(value, opt, options);
-          if (result !== true) {
-            throw new AxiosError("option " + opt + " must be " + result, AxiosError.ERR_BAD_OPTION_VALUE);
-          }
-          continue;
-        }
-        if (allowUnknown !== true) {
-          throw new AxiosError("Unknown option " + opt, AxiosError.ERR_BAD_OPTION);
-        }
-      }
-    }
-    module2.exports = {
-      assertOptions,
-      validators
-    };
-  }
-});
-
-// node_modules/axios/lib/core/Axios.js
-var require_Axios = __commonJS({
-  "node_modules/axios/lib/core/Axios.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var buildURL = require_buildURL();
-    var InterceptorManager = require_InterceptorManager();
-    var dispatchRequest = require_dispatchRequest();
-    var mergeConfig = require_mergeConfig();
-    var buildFullPath = require_buildFullPath();
-    var validator = require_validator();
-    var validators = validator.validators;
-    function Axios(instanceConfig) {
-      this.defaults = instanceConfig;
-      this.interceptors = {
-        request: new InterceptorManager(),
-        response: new InterceptorManager()
-      };
-    }
-    Axios.prototype.request = function request(configOrUrl, config) {
-      if (typeof configOrUrl === "string") {
-        config = config || {};
-        config.url = configOrUrl;
-      } else {
-        config = configOrUrl || {};
-      }
-      config = mergeConfig(this.defaults, config);
-      if (config.method) {
-        config.method = config.method.toLowerCase();
-      } else if (this.defaults.method) {
-        config.method = this.defaults.method.toLowerCase();
-      } else {
-        config.method = "get";
-      }
-      var transitional = config.transitional;
-      if (transitional !== void 0) {
-        validator.assertOptions(transitional, {
-          silentJSONParsing: validators.transitional(validators.boolean),
-          forcedJSONParsing: validators.transitional(validators.boolean),
-          clarifyTimeoutError: validators.transitional(validators.boolean)
-        }, false);
-      }
-      var requestInterceptorChain = [];
-      var synchronousRequestInterceptors = true;
-      this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
-        if (typeof interceptor.runWhen === "function" && interceptor.runWhen(config) === false) {
-          return;
-        }
-        synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
-        requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
-      });
-      var responseInterceptorChain = [];
-      this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
-        responseInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
-      });
-      var promise;
-      if (!synchronousRequestInterceptors) {
-        var chain = [dispatchRequest, void 0];
-        Array.prototype.unshift.apply(chain, requestInterceptorChain);
-        chain = chain.concat(responseInterceptorChain);
-        promise = Promise.resolve(config);
-        while (chain.length) {
-          promise = promise.then(chain.shift(), chain.shift());
-        }
-        return promise;
-      }
-      var newConfig = config;
-      while (requestInterceptorChain.length) {
-        var onFulfilled = requestInterceptorChain.shift();
-        var onRejected = requestInterceptorChain.shift();
-        try {
-          newConfig = onFulfilled(newConfig);
-        } catch (error) {
-          onRejected(error);
-          break;
-        }
-      }
-      try {
-        promise = dispatchRequest(newConfig);
-      } catch (error) {
-        return Promise.reject(error);
-      }
-      while (responseInterceptorChain.length) {
-        promise = promise.then(responseInterceptorChain.shift(), responseInterceptorChain.shift());
-      }
-      return promise;
-    };
-    Axios.prototype.getUri = function getUri(config) {
-      config = mergeConfig(this.defaults, config);
-      var fullPath = buildFullPath(config.baseURL, config.url);
-      return buildURL(fullPath, config.params, config.paramsSerializer);
-    };
-    utils.forEach(["delete", "get", "head", "options"], function forEachMethodNoData(method) {
-      Axios.prototype[method] = function(url, config) {
-        return this.request(mergeConfig(config || {}, {
-          method,
-          url,
-          data: (config || {}).data
-        }));
-      };
-    });
-    utils.forEach(["post", "put", "patch"], function forEachMethodWithData(method) {
-      function generateHTTPMethod(isForm) {
-        return function httpMethod(url, data, config) {
-          return this.request(mergeConfig(config || {}, {
-            method,
-            headers: isForm ? {
-              "Content-Type": "multipart/form-data"
-            } : {},
-            url,
-            data
-          }));
+          return e2;
         };
-      }
-      Axios.prototype[method] = generateHTTPMethod();
-      Axios.prototype[method + "Form"] = generateHTTPMethod(true);
-    });
-    module2.exports = Axios;
-  }
-});
-
-// node_modules/axios/lib/cancel/CancelToken.js
-var require_CancelToken = __commonJS({
-  "node_modules/axios/lib/cancel/CancelToken.js"(exports, module2) {
-    "use strict";
-    var CanceledError = require_CanceledError();
-    function CancelToken(executor) {
-      if (typeof executor !== "function") {
-        throw new TypeError("executor must be a function.");
-      }
-      var resolvePromise;
-      this.promise = new Promise(function promiseExecutor(resolve) {
-        resolvePromise = resolve;
-      });
-      var token = this;
-      this.promise.then(function(cancel) {
-        if (!token._listeners)
-          return;
-        var i;
-        var l = token._listeners.length;
-        for (i = 0; i < l; i++) {
-          token._listeners[i](cancel);
-        }
-        token._listeners = null;
-      });
-      this.promise.then = function(onfulfilled) {
-        var _resolve;
-        var promise = new Promise(function(resolve) {
-          token.subscribe(resolve);
-          _resolve = resolve;
-        }).then(onfulfilled);
-        promise.cancel = function reject() {
-          token.unsubscribe(_resolve);
+      }, function(t, e) {
+        var n = { js: "javascript", py: "python", "c++": "cpp", md: "markdown" };
+        t.exports = function(t2) {
+          var e2 = t2.match(/<.*?class=".*?language-(\bc\b|\bjava\b|\bjs\b|\bjavascript\b|\bpython\b|\bcpp\b|\bc\+\+\b|\bpy\b|\bcss\b|\bhtml\b|\bmarkdown\b|\bmd\b)".*?>/);
+          return e2 ? n[e2[1]] || e2[1] : t2.match(/<span.*?hljs-(comment|keyword|number|string|literal|built_in|function|title|bullet).*?<\/span>/) ? "javascript" : "";
         };
-        return promise;
-      };
-      executor(function cancel(message) {
-        if (token.reason) {
-          return;
-        }
-        token.reason = new CanceledError(message);
-        resolvePromise(token.reason);
-      });
-    }
-    CancelToken.prototype.throwIfRequested = function throwIfRequested() {
-      if (this.reason) {
-        throw this.reason;
-      }
-    };
-    CancelToken.prototype.subscribe = function subscribe(listener) {
-      if (this.reason) {
-        listener(this.reason);
-        return;
-      }
-      if (this._listeners) {
-        this._listeners.push(listener);
-      } else {
-        this._listeners = [listener];
-      }
-    };
-    CancelToken.prototype.unsubscribe = function unsubscribe(listener) {
-      if (!this._listeners) {
-        return;
-      }
-      var index = this._listeners.indexOf(listener);
-      if (index !== -1) {
-        this._listeners.splice(index, 1);
-      }
-    };
-    CancelToken.source = function source() {
-      var cancel;
-      var token = new CancelToken(function executor(c) {
-        cancel = c;
-      });
-      return {
-        token,
-        cancel
-      };
-    };
-    module2.exports = CancelToken;
-  }
-});
-
-// node_modules/axios/lib/helpers/spread.js
-var require_spread = __commonJS({
-  "node_modules/axios/lib/helpers/spread.js"(exports, module2) {
-    "use strict";
-    module2.exports = function spread(callback) {
-      return function wrap(arr) {
-        return callback.apply(null, arr);
-      };
-    };
-  }
-});
-
-// node_modules/axios/lib/helpers/isAxiosError.js
-var require_isAxiosError = __commonJS({
-  "node_modules/axios/lib/helpers/isAxiosError.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    module2.exports = function isAxiosError(payload) {
-      return utils.isObject(payload) && payload.isAxiosError === true;
-    };
-  }
-});
-
-// node_modules/axios/lib/axios.js
-var require_axios = __commonJS({
-  "node_modules/axios/lib/axios.js"(exports, module2) {
-    "use strict";
-    var utils = require_utils();
-    var bind = require_bind();
-    var Axios = require_Axios();
-    var mergeConfig = require_mergeConfig();
-    var defaults = require_defaults();
-    function createInstance(defaultConfig) {
-      var context = new Axios(defaultConfig);
-      var instance = bind(Axios.prototype.request, context);
-      utils.extend(instance, Axios.prototype, context);
-      utils.extend(instance, context);
-      instance.create = function create(instanceConfig) {
-        return createInstance(mergeConfig(defaultConfig, instanceConfig));
-      };
-      return instance;
-    }
-    var axios2 = createInstance(defaults);
-    axios2.Axios = Axios;
-    axios2.CanceledError = require_CanceledError();
-    axios2.CancelToken = require_CancelToken();
-    axios2.isCancel = require_isCancel();
-    axios2.VERSION = require_data().version;
-    axios2.toFormData = require_toFormData();
-    axios2.AxiosError = require_AxiosError();
-    axios2.Cancel = axios2.CanceledError;
-    axios2.all = function all(promises) {
-      return Promise.all(promises);
-    };
-    axios2.spread = require_spread();
-    axios2.isAxiosError = require_isAxiosError();
-    module2.exports = axios2;
-    module2.exports.default = axios2;
-  }
-});
-
-// node_modules/axios/index.js
-var require_axios2 = __commonJS({
-  "node_modules/axios/index.js"(exports, module2) {
-    module2.exports = require_axios();
+      }, function(t, e) {
+        t.exports = function(t2) {
+          return t2.replace(/<!--([^\n\r\t\s]|\n|\r|\t|\s)*?-->/g, "");
+        };
+      }, function(t, e) {
+        t.exports = function(t2, e2) {
+          var n = { _default_: "---|", center: ":---:|", left: ":---|", right: "---:|", start: ":---|", end: "---:|" }, r = Array(e2).fill(n._default_), o = t2.match(/<(td|th)(.*?)>/g);
+          return o ? r = (r = o.slice(0, e2)).map(function(t3) {
+            var e3 = t3.match(/align\s*=\s*['"]\s*(center|left|right|start|end)/), r2 = t3.match(/text-align\s*:\s*(center|left|right|start|end)/);
+            return e3 || r2 ? e3 && !r2 ? n[e3[1]] || n._default_ : n[r2[1]] || n._default_ : n._default_;
+          }) : r;
+        };
+      }, function(t, e) {
+        t.exports = ["th", "td"];
+      }]);
+    });
   }
 });
 
@@ -1495,10 +3021,12 @@ __export(exports, {
 });
 var import_obsidian = __toModule(require("obsidian"));
 var import_fs = __toModule(require("fs"));
-var import_axios = __toModule(require_axios2());
+var import_html_to_md = __toModule(require_dist());
 var URISCHEME = "file://";
 var MDDIVCLASS = "obsidian-iframe-md";
 var ERRORMD = "# Obsidian-iframes cannot access the internet";
+var CONVERTMD = "iframe-md";
+var IGNOREDTAGS = [CONVERTMD, "src", "sandbox"];
 var DEFAULT_SETTINGS = {
   allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." }
 };
@@ -1520,7 +3048,7 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
   onload() {
     return __async(this, null, function* () {
       yield this.loadSettings();
-      this.addSettingTab(new ObsidianColumnsSettings(this.app, this));
+      this.addSettingTab(new ObsidianIframeSettings(this.app, this));
       let processIframe = (element, context) => {
         let iframes = element.querySelectorAll("iframe");
         for (let child of Array.from(iframes)) {
@@ -1543,7 +3071,10 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
               child.setAttribute("src", path);
             }
           }
-          if (src.endsWith(".md")) {
+          let classAttrib = child.getAttribute("class");
+          let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
+          let endsMD = src.endsWith(".md");
+          if (endsMD || convertHTML) {
             let url = new URL(child.getAttribute("src"));
             let fileContentCallback = (source) => {
               Array.from(element.children).forEach((i) => {
@@ -1551,7 +3082,7 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
               });
               let div = element.createEl("div", { cls: MDDIVCLASS });
               Array.from(child.attributes).forEach((i) => {
-                if (i.nodeName != "src" && i.nodeName != "sandbox") {
+                if (!IGNOREDTAGS.contains(i.nodeName)) {
                   div.setAttribute(i.nodeName, i.nodeValue);
                 }
               });
@@ -1562,11 +3093,20 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
               (0, import_fs.readFile)(url.pathname, (e, d) => {
                 if (e)
                   console.error(e);
-                fileContentCallback(d.toString());
+                let dString = d.toString();
+                if (convertHTML && !endsMD) {
+                  dString = (0, import_html_to_md.default)(dString);
+                }
+                fileContentCallback(dString);
               });
             } else {
               if (this.settings.allowInet.value) {
-                (0, import_axios.default)(url.href).then((a) => fileContentCallback(a.data)).catch(console.error);
+                (0, import_obsidian.request)({ url: url.href }).then((a) => {
+                  if (convertHTML && !endsMD) {
+                    a = (0, import_html_to_md.default)(a);
+                  }
+                  fileContentCallback(a);
+                }).catch(console.error);
               } else {
                 fileContentCallback(ERRORMD);
               }
@@ -1592,7 +3132,7 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
     });
   }
 };
-var ObsidianColumnsSettings = class extends import_obsidian.PluginSettingTab {
+var ObsidianIframeSettings = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
