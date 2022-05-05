@@ -1,4 +1,4 @@
-import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App, request } from 'obsidian';
+import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App, MarkdownRenderChild, request } from 'obsidian';
 import { readFile } from "fs"
 import axios from "axios"
 import html2md from 'html-to-md'
@@ -92,11 +92,13 @@ export default class ObsidianIframes extends Plugin {
 							}
 						})
 						const sourcePath = context.sourcePath;
+						let renderDiv = new MarkdownRenderChild(div)
+						context.addChild(renderDiv)
 						MarkdownRenderer.renderMarkdown(
 							source,
 							div,
 							sourcePath,
-							null
+							renderDiv
 						);
 					}
 

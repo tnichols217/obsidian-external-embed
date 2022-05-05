@@ -3087,7 +3087,9 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
                 }
               });
               const sourcePath = context.sourcePath;
-              import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, null);
+              let renderDiv = new import_obsidian.MarkdownRenderChild(div);
+              context.addChild(renderDiv);
+              import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, renderDiv);
             };
             if (url.protocol == "file:") {
               (0, import_fs.readFile)(url.pathname, (e, d) => {
