@@ -3027,6 +3027,10 @@ var MDDIVCLASS = "obsidian-iframe-md";
 var ERRORMD = "# Obsidian-iframes cannot access the internet";
 var CONVERTMD = "iframe-md";
 var IGNOREDTAGS = [CONVERTMD, "src", "sandbox"];
+var PREFIX = "!!!";
+var IMPORTNAME = "import";
+var IFRAMENAME = "iframe";
+var CACHE = { "true": {}, "false": {} };
 var DEFAULT_SETTINGS = {
   allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." }
 };
@@ -3044,6 +3048,87 @@ var parseObject = (value, typ) => {
     return parseFloat(value);
   }
 };
+var processURI = (URI, source, root) => {
+  if (!URI.contains("://")) {
+    if (URI.startsWith("/")) {
+      return [URISCHEME, root, URI].join("");
+    } else if (URI.startsWith("./")) {
+      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(1)].join("");
+    } else {
+      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), "/", URI].join("");
+    }
+  }
+  return URI;
+};
+var getURI = (URI, convert, allowInet) => {
+  return new Promise((resolve, reject) => {
+    if (CACHE[convert.toString()].hasOwnProperty(URI)) {
+      resolve(CACHE[convert.toString()][URI]);
+      return;
+    }
+    let url = new URL(URI);
+    if (url.protocol == "file:") {
+      (0, import_fs.readFile)(url.pathname, (e, d) => {
+        if (e)
+          reject(e);
+        let dString = d.toString();
+        if (convert) {
+          dString = (0, import_html_to_md.default)(dString);
+        }
+        CACHE[convert.toString()][URI] = dString;
+        resolve(dString);
+      });
+    } else {
+      if (allowInet) {
+        (0, import_obsidian.request)({ url: url.href }).then((a) => {
+          if (convert) {
+            a = (0, import_html_to_md.default)(a);
+          }
+          CACHE[convert.toString()][URI] = a;
+          resolve(a);
+        }).catch(console.error);
+      } else {
+        resolve(ERRORMD);
+      }
+    }
+  });
+};
+var renderMD = (source, div, context) => {
+  const sourcePath = context.sourcePath;
+  let renderDiv = new import_obsidian.MarkdownRenderChild(div);
+  context.addChild(renderDiv);
+  return import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, renderDiv);
+};
+var renderURI = (src, element, context, allowInet, attributes, convertHTML) => __async(void 0, null, function* () {
+  return new Promise((resolve, reject) => __async(void 0, null, function* () {
+    let endsMD = src.endsWith(".md");
+    Array.from(element.children).forEach((i) => {
+      element.removeChild(i);
+    });
+    if (endsMD || convertHTML) {
+      let fileContentCallback = (source) => __async(void 0, null, function* () {
+        let div = element.createEl("div", { cls: MDDIVCLASS });
+        Array.from(attributes).forEach((i) => {
+          if (!IGNOREDTAGS.contains(i.nodeName)) {
+            div.setAttribute(i.nodeName, i.nodeValue);
+          }
+        });
+        yield renderMD(source, div, context);
+        resolve();
+      });
+      getURI(src, convertHTML && !endsMD, allowInet).then(fileContentCallback).catch(console.error);
+    } else {
+      let div = element.createEl("iframe");
+      Array.from(attributes).forEach((i) => {
+        if (!IGNOREDTAGS.contains(i.nodeName)) {
+          div.setAttribute(i.nodeName, i.nodeValue);
+        }
+      });
+      div.setAttribute("src", src);
+      resolve();
+    }
+  }));
+});
 var ObsidianIframes = class extends import_obsidian.Plugin {
   onload() {
     return __async(this, null, function* () {
@@ -3052,73 +3137,58 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
       let processIframe = (element, context) => {
         let iframes = element.querySelectorAll("iframe");
         for (let child of Array.from(iframes)) {
-          let src = child.getAttribute("src");
-          if (!src.contains("://")) {
-            let root = this.app.vault.adapter.getBasePath();
-            if (src.startsWith("/")) {
-              child.setAttribute("src", URISCHEME + root + src);
-            } else if (src.startsWith("./")) {
-              let source = context.sourcePath;
-              let index = source.lastIndexOf("/");
-              source = source.substring(0, index);
-              let path = URISCHEME + root + "/" + source + src.substring(1);
-              child.setAttribute("src", path);
-            } else {
-              let source = context.sourcePath;
-              let index = source.lastIndexOf("/");
-              source = source.substring(0, index);
-              let path = URISCHEME + root + "/" + source + "/" + src;
-              child.setAttribute("src", path);
-            }
-          }
+          let src = processURI(child.getAttribute("src"), context.sourcePath, this.app.vault.adapter.getBasePath());
+          child.setAttribute("src", src);
           let classAttrib = child.getAttribute("class");
           let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
-          let endsMD = src.endsWith(".md");
-          if (endsMD || convertHTML) {
-            let url = new URL(child.getAttribute("src"));
-            let fileContentCallback = (source) => {
-              Array.from(element.children).forEach((i) => {
-                element.removeChild(i);
-              });
-              let div = element.createEl("div", { cls: MDDIVCLASS });
-              Array.from(child.attributes).forEach((i) => {
-                if (!IGNOREDTAGS.contains(i.nodeName)) {
-                  div.setAttribute(i.nodeName, i.nodeValue);
-                }
-              });
-              const sourcePath = context.sourcePath;
-              let renderDiv = new import_obsidian.MarkdownRenderChild(div);
-              context.addChild(renderDiv);
-              import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, renderDiv);
-            };
-            if (url.protocol == "file:") {
-              (0, import_fs.readFile)(url.pathname, (e, d) => {
-                if (e)
-                  console.error(e);
-                let dString = d.toString();
-                if (convertHTML && !endsMD) {
-                  dString = (0, import_html_to_md.default)(dString);
-                }
-                fileContentCallback(dString);
-              });
-            } else {
-              if (this.settings.allowInet.value) {
-                (0, import_obsidian.request)({ url: url.href }).then((a) => {
-                  if (convertHTML && !endsMD) {
-                    a = (0, import_html_to_md.default)(a);
-                  }
-                  fileContentCallback(a);
-                }).catch(console.error);
-              } else {
-                fileContentCallback(ERRORMD);
-              }
-            }
-          }
+          renderURI(src, element, context, this.settings.allowInet.value, child.attributes, convertHTML);
         }
       };
-      this.registerMarkdownPostProcessor((element, context) => {
-        processIframe(element, context);
+      let processCustomCommands = (element, context) => __async(this, null, function* () {
+        let textContent = element.textContent;
+        let ctx = context.getSectionInfo(element);
+        if (ctx == null) {
+          return;
+        }
+        if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
+          let MDtext = ctx.text.split("\n").slice(ctx.lineStart, ctx.lineEnd + 1);
+          let mappedMD = yield Promise.all(MDtext.map((line) => __async(this, null, function* () {
+            if (line.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
+              let words = line.split(" ");
+              let strings = [];
+              for (let [index, word] of Array.from(words).slice(1).entries()) {
+                let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "");
+                if (commandname) {
+                  strings.push({ string: commandname + " " + word, URI: processURI(word, context.sourcePath, this.app.vault.adapter.getBasePath()), type: commandname });
+                }
+              }
+              for (let promiseString of strings) {
+                let div = createEl("div");
+                if (promiseString.type == PREFIX + IMPORTNAME) {
+                  yield renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"));
+                  line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""));
+                } else {
+                  yield renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, false);
+                }
+                line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""));
+              }
+            }
+            return line;
+          })));
+          Array.from(element.children).forEach((i) => {
+            element.removeChild(i);
+          });
+          renderMD(mappedMD.join("\n"), element.createEl("div"), context);
+        }
       });
+      let markdownPostProcessor = (element, context) => {
+        processCustomCommands(element, context);
+        processIframe(element, context);
+      };
+      this.registerMarkdownPostProcessor(markdownPostProcessor);
+      this.addCommand({ id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
+        CACHE = { "true": {}, "false": {} };
+      } });
     });
   }
   onunload() {
@@ -3144,7 +3214,6 @@ var ObsidianIframeSettings = class extends import_obsidian.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "Settings for obsidian-columns" });
     let keyvals = Object.entries(DEFAULT_SETTINGS);
-    console.log(keyvals);
     for (let keyval of keyvals) {
       new import_obsidian.Setting(containerEl).setName(keyval[1].name).setDesc(keyval[1].desc).addText((text) => text.setPlaceholder(String(keyval[1].value)).setValue(String(this.plugin.settings[keyval[0]].value)).onChange((value) => {
         keyval[1].value = parseObject(value, typeof keyval[1].value);
