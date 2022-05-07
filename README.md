@@ -25,7 +25,8 @@ This plugin also allows you to "iframe" an MD file, which will include its code 
 - Starting without a slash will use relative directories from the current MD file
 - If youd like to use a file outside of your valut, prefix the src with "file://"
 
-## Example:
+## Examples
+### Importing MD files with the \<iframe> tag
 To use, just use the src attribute in an iframe tag:
 ![image](https://user-images.githubusercontent.com/62992267/166679372-ca3e8dcb-b5ce-47a0-b49a-09d71478f185.png)
 
@@ -36,6 +37,8 @@ Produced with the following MD:
 
 <iframe src="https://raw.githubusercontent.com/tnichols217/obsidian-columns/main/README.md" style="width: 100%; padding:50px"></iframe>
 ```
+
+### Importing a website and converting it to MD
 ![image](https://user-images.githubusercontent.com/62992267/166702025-36436b98-5ef6-432e-a6bd-4b22a3afe247.png)
 
 Produced with the following MD:
@@ -46,6 +49,45 @@ Produced with the following MD:
 <iframe src="https://linux.die.net/man/1/curl" class="iframe-md" style="margin: 50px"></iframe>
 ```
 
+### Using the `!!!import` command
+![image](https://user-images.githubusercontent.com/62992267/167250059-9ac70547-69b2-4658-850f-139312317d09.png)
+
+Produced with the following MD:
+```md
+# This is file example.md
+**Here I import example1.md:**
+
+!!!import example1.md
+
+**Here i import it again:**
+
+!!!import example1.md
+```
+
+### Using the `!!!paste` command
+![image](https://user-images.githubusercontent.com/62992267/167250122-08d6bdb2-af5a-44be-a079-ea0dc381a674.png)
+
+Produced with the following MD:
+```md
+# This is file exmaple.md
+
+My name is !!!paste Myname.md
+```
+
+### Using `!!!paste` to load a file defined in another file
+![image](https://user-images.githubusercontent.com/62992267/167250215-48cecc36-de1b-4303-b36a-d1eae135bf75.png)
+
+The filename to be imported is defined inside the fileToLoad.md file
+
+```md
+# This is file exmaple.md
+
+!!!import !!!paste fileToLoad.md
+```
+
 ## Settings
 ### Allow Internet
 Allows the plugin to include MD files from the internet.
+
+### Recursion Depth
+Blocks recursive imports past this depth. 
