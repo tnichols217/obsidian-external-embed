@@ -1,4 +1,4 @@
-# Obsidian Iframes
+# Obsidian Dynamic Import
 This plugin allows you to use the iframe tag in your obsidian notes to refer to local files.\
 Works by replacing the src attribute of the iframe tag with a global path using the file:// URI scheme.\
 Also adds three custom syntaxes to import other files into the current file: iframe, import, and paste.\
