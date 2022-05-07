@@ -221,18 +221,31 @@ export default class ObsidianDynamicImport extends Plugin {
 				let mappedMD = MDtext.map(async (line) => {
 					if (line.contains(PREFIX + IMPORTNAME) || line.contains(PREFIX + IFRAMENAME) || line.contains(PREFIX + PASTENAME)) {
 						let words = line.split(" ")
-
 						{
 							let contains
 							for (let i = recursionDepth; i < SETTINGS.recursionDepth.value; i++) {
 								words = words.map(i => i.trim())
 								contains = false
-
 								for (let index = words.length - 1; index >= 1; index--) {
 									let prevWord = words[index - 1]
 									if (prevWord.endsWith(PREFIX + PASTENAME)) {
 										contains = true
-										words.splice(index - 1, 2, ...(await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), false)).split(" "))
+										let beforeTag = words[index - 1].replace(PREFIX + PASTENAME, "")
+
+										let replaceString = (await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), false)).split(" ")
+
+
+										let last = index + 1 < words.length
+										if (beforeTag.endsWith(PREFIX[0]) && last) {
+											beforeTag = beforeTag.slice(0, beforeTag.length - 2)
+											replaceString[replaceString.length - 1] = replaceString[replaceString.length - 1] + words[index + 1]
+										} else {
+											replaceString.push(words[index + 1])
+										}
+										console.log()
+										words.splice(index - 1, 3, ...replaceString)
+										words[index - 1] = beforeTag + words[index - 1]
+
 									}
 								}
 								line = words.join(" ")
@@ -321,7 +334,7 @@ class ObsidianDynamicImportSettings extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'Settings for obsidian-columns' });
+		containerEl.createEl('h2', { text: 'Settings for Obsidian Dynamic Import' });
 
 		let keyvals = Object.entries(DEFAULT_SETTINGS)
 

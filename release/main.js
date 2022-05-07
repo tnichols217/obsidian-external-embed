@@ -3017,7 +3017,7 @@ var require_dist = __commonJS({
 
 // main.ts
 __export(exports, {
-  default: () => ObsidianIframes
+  default: () => ObsidianDynamicImport
 });
 var import_obsidian = __toModule(require("obsidian"));
 var import_fs = __toModule(require("fs"));
@@ -3163,11 +3163,11 @@ var renderURI = (src, element, context, recursiveDepth, attributes, convertHTML,
     }
   }));
 });
-var ObsidianIframes = class extends import_obsidian.Plugin {
+var ObsidianDynamicImport = class extends import_obsidian.Plugin {
   onload() {
     return __async(this, null, function* () {
       yield this.loadSettings();
-      this.addSettingTab(new ObsidianIframeSettings(this.app, this));
+      this.addSettingTab(new ObsidianDynamicImportSettings(this.app, this));
       let processIframe = (element, context, recursionDepth = 0) => {
         let iframes = element.querySelectorAll("iframe");
         for (let child of Array.from(iframes)) {
@@ -3203,7 +3203,18 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
                     let prevWord = words[index - 1];
                     if (prevWord.endsWith(PREFIX + PASTENAME)) {
                       contains = true;
-                      words.splice(index - 1, 2, ...(yield getURI(processURI(words[index], context.sourcePath, this.app.vault.adapter.getBasePath()), false)).split(" "));
+                      let beforeTag = words[index - 1].replace(PREFIX + PASTENAME, "");
+                      let replaceString = (yield getURI(processURI(words[index], context.sourcePath, this.app.vault.adapter.getBasePath()), false)).split(" ");
+                      let last = index + 1 < words.length;
+                      if (beforeTag.endsWith(PREFIX[0]) && last) {
+                        beforeTag = beforeTag.slice(0, beforeTag.length - 2);
+                        replaceString[replaceString.length - 1] = replaceString[replaceString.length - 1] + words[index + 1];
+                      } else {
+                        replaceString.push(words[index + 1]);
+                      }
+                      console.log();
+                      words.splice(index - 1, 3, ...replaceString);
+                      words[index - 1] = beforeTag + words[index - 1];
                     }
                   }
                   line = words.join(" ");
@@ -3274,7 +3285,7 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
     });
   }
 };
-var ObsidianIframeSettings = class extends import_obsidian.PluginSettingTab {
+var ObsidianDynamicImportSettings = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -3282,7 +3293,7 @@ var ObsidianIframeSettings = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Settings for obsidian-columns" });
+    containerEl.createEl("h2", { text: "Settings for Obsidian Dynamic Import" });
     let keyvals = Object.entries(DEFAULT_SETTINGS);
     for (let keyval of keyvals) {
       new import_obsidian.Setting(containerEl).setName(keyval[1].name).setDesc(keyval[1].desc).addText((text) => text.setPlaceholder(String(keyval[1].value)).setValue(String(SETTINGS[keyval[0]].value)).onChange((value) => {

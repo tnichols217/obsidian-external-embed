@@ -7,7 +7,7 @@ Also adds three custom syntaxes to import other files into the current file: ifr
 ### paste
 Execute by typing `!!!paste` followed by a path to a file or URL.
 Will simply replace the command with the raw file contents before getting rerendered as MD
-Executes first out of all three commands
+Executes first out of all three commands. Put a fourth exclamation mark in the beginning to remove the whitespace after the paste command. If you want to have no whitespace before the paste, simply delete it.
 
 ### iframe
 Execute by typing `!!!iframe` followed by a path to a file or URL to iframe, if its an MD file, it will render it
