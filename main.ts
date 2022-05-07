@@ -12,8 +12,19 @@ const PREFIX = "!!!"
 const IMPORTNAME = "import"
 const IFRAMENAME = "iframe"
 const PASTENAME = "paste"
+const EMPTYCACHE = { value: { "true": {}, "false": {} }, time: { "true": {}, "false": {} } }
 
-let CACHE: Record<string, Record<string, string>> = { "true": {}, "false": {} }
+let CACHE: cacheType = EMPTYCACHE
+let SETTINGS: iframeSettings
+
+type cacheItem<T> = Record<string, Record<string, T>>
+
+type extraCallback = (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void
+
+interface cacheType {
+	value: cacheItem<string>
+	time: cacheItem<Date>
+}
 
 interface settingItem<T> {
 	value: T
@@ -22,13 +33,17 @@ interface settingItem<T> {
 }
 
 interface iframeSettings {
-	allowInet: settingItem<boolean>,
+	allowInet: settingItem<boolean>
 	recursionDepth: settingItem<number>
+	useCacheForFiles: settingItem<boolean>
+	cacheRefreshTime: settingItem<number>
 }
 
 const DEFAULT_SETTINGS: iframeSettings = {
 	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
-	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." }
+	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." },
+	useCacheForFiles: { value: false, name: "Cache Local Files", desc: "Cache files instead of loading them on every rerender. (Remote Files will always be cached)" },
+	cacheRefreshTime: { value: 30000, name: "Cache Refresh Time (miliseconds)", desc: "Cached filed called over this time ago will be refreshed when rendered." }
 }
 
 let parseBoolean = (value: string) => {
@@ -63,17 +78,18 @@ let processURI = (URI: string, source: string, root: string): string => {
 	return URI
 }
 
-let getURI = (URI: string, convert?: boolean, allowInet?: boolean): Promise<string> => {
+let getURI = (URI: string, convert?: boolean): Promise<string> => {
 	return new Promise<string>((resolve, reject) => {
-		if (CACHE[convert.toString()].hasOwnProperty(URI)) {
-			resolve(CACHE[convert.toString()][URI])
-			return
-		}
+		let c = convert.toString()
 		let url = new URL(URI)
 		if (url.protocol == "file:") {
+			if (SETTINGS.useCacheForFiles.value && CACHE.value[c].hasOwnProperty(URI) && (new Date().getTime() - CACHE.time[c][URI].getTime() < SETTINGS.cacheRefreshTime.value)) {
+				resolve(CACHE.value[c][URI])
+				return
+			}
 			readFile(url.pathname, (e, d) => {
 				if (e) {
-					if (e.code == "ENOENT") {
+					if (e.code == "ENOENT" || e.code == "ENOTDIR") {
 						resolve("")
 						return
 					} else {
@@ -86,16 +102,24 @@ let getURI = (URI: string, convert?: boolean, allowInet?: boolean): Promise<stri
 				if (convert) {
 					dString = html2md(dString)
 				}
-				CACHE[convert.toString()][URI] = dString
+				if (SETTINGS.useCacheForFiles.value) {
+					CACHE.value[c][URI] = dString
+					CACHE.time[c][URI] = new Date()
+				}
 				resolve(dString)
 			})
 		} else {
-			if (allowInet) {
+			if (CACHE.value[c].hasOwnProperty(URI) && (new Date().getTime() - CACHE.time[c][URI].getTime() < SETTINGS.cacheRefreshTime.value)) {
+				resolve(CACHE.value[c][URI])
+				return
+			}
+			if (SETTINGS.allowInet.value) {
 				request({ url: url.href }).then((a) => {
 					if (convert) {
 						a = html2md(a)
 					}
-					CACHE[convert.toString()][URI] = a
+					CACHE.value[c][URI] = a
+					CACHE.time[c][URI] = new Date()
 					resolve(a)
 				}).catch(console.error)
 			} else {
@@ -105,12 +129,12 @@ let getURI = (URI: string, convert?: boolean, allowInet?: boolean): Promise<stri
 	})
 }
 
-let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, maxDepth: number, additionalCallback?: (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void): Promise<void> => {
+let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, additionalCallback?: extraCallback): Promise<void> => {
 
 	const sourcePath = context.sourcePath;
 	let renderDiv = new MarkdownRenderChild(div)
 	context.addChild(renderDiv)
-	if (recursiveDepth > maxDepth) {
+	if (recursiveDepth > SETTINGS.recursionDepth.value) {
 		div.createEl("p", source)
 		return new Promise((resolve, reject) => { resolve })
 	}
@@ -126,7 +150,7 @@ let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessor
 	})
 }
 
-let renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, recursiveDepth: number, maxDepth: number, allowInet?: boolean, attributes?: NamedNodeMap, convertHTML?: boolean, additionalCallback?: (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void): Promise<void> => {
+let renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, recursiveDepth: number, attributes?: NamedNodeMap, convertHTML?: boolean, additionalCallback?: extraCallback): Promise<void> => {
 	return new Promise<void>(async (resolve, reject) => {
 		let endsMD = src.endsWith(".md")
 
@@ -143,11 +167,11 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 						div.setAttribute(i.nodeName, i.nodeValue)
 					}
 				})
-				await renderMD(source, div, context, recursiveDepth, maxDepth, additionalCallback)
+				await renderMD(source, div, context, recursiveDepth, additionalCallback)
 				resolve()
 			}
 
-			getURI(src, convertHTML && !endsMD, allowInet).then(fileContentCallback).catch(console.error)
+			getURI(src, convertHTML && !endsMD).then(fileContentCallback).catch(console.error)
 		} else {
 			let div = element.createEl("iframe")
 			Array.from(attributes).forEach((i) => {
@@ -162,8 +186,6 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 }
 
 export default class ObsidianIframes extends Plugin {
-
-	settings: iframeSettings;
 
 	async onload() {
 
@@ -180,7 +202,7 @@ export default class ObsidianIframes extends Plugin {
 				let classAttrib = child.getAttribute("class")
 				let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
 
-				renderURI(src, element, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, child.attributes, convertHTML, markdownPostProcessor)
+				renderURI(src, element, context, recursionDepth + 1, child.attributes, convertHTML, markdownPostProcessor)
 			}
 		}
 
@@ -203,7 +225,7 @@ export default class ObsidianIframes extends Plugin {
 
 						{
 							let contains
-							for (let i = recursionDepth; i < this.settings.recursionDepth.value; i++) {
+							for (let i = recursionDepth; i < SETTINGS.recursionDepth.value; i++) {
 								words = words.map(i => i.trim())
 								contains = false
 
@@ -211,7 +233,7 @@ export default class ObsidianIframes extends Plugin {
 									let prevWord = words[index - 1]
 									if (prevWord.endsWith(PREFIX + PASTENAME)) {
 										contains = true
-										words.splice(index - 1, 2, ...(await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), false, this.settings.allowInet.value)).split(" "))
+										words.splice(index - 1, 2, ...(await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), false)).split(" "))
 									}
 								}
 								line = words.join(" ")
@@ -241,11 +263,11 @@ export default class ObsidianIframes extends Plugin {
 							let replaceString = ""
 							if (promiseString.type == PREFIX + IMPORTNAME) {
 								let div = createEl("div")
-								await renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"), markdownPostProcessor)
+								await renderURI(promiseString.URI, div, context, recursionDepth + 1, div.attributes, !promiseString.URI.endsWith(".md"), markdownPostProcessor)
 								replaceString = div.innerHTML.replace("\n", "")
 							} else if (promiseString.type == PREFIX + IFRAMENAME) {
 								let div = createEl("div")
-								await renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, false, markdownPostProcessor)
+								await renderURI(promiseString.URI, div, context, recursionDepth + 1, div.attributes, false, markdownPostProcessor)
 								replaceString = div.innerHTML.replace("\n", "")
 							}
 							line = line.replace(promiseString.string, replaceString)
@@ -257,7 +279,7 @@ export default class ObsidianIframes extends Plugin {
 					Array.from(element.children).forEach((i) => {
 						element.removeChild(i)
 					})
-					renderMD(mappedMDResolved.join("\n"), element.createEl("div"), context, recursionDepth + 1, this.settings.recursionDepth.value, markdownPostProcessor)
+					renderMD(mappedMDResolved.join("\n"), element.createEl("div"), context, recursionDepth + 1, markdownPostProcessor)
 				})
 			}
 		}
@@ -271,7 +293,7 @@ export default class ObsidianIframes extends Plugin {
 
 		this.addCommand({
 			id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
-				CACHE = { "true": {}, "false": {} }
+				CACHE = EMPTYCACHE
 			}
 		})
 	}
@@ -281,11 +303,11 @@ export default class ObsidianIframes extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		SETTINGS = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		await this.saveData(SETTINGS);
 	}
 }
 
@@ -310,7 +332,7 @@ class ObsidianIframeSettings extends PluginSettingTab {
 				.setDesc(keyval[1].desc)
 				.addText(text => text
 					.setPlaceholder(String(keyval[1].value))
-					.setValue(String((this.plugin.settings as any)[keyval[0]].value))
+					.setValue(String((SETTINGS as any)[keyval[0]].value))
 					.onChange((value) => {
 						keyval[1].value = parseObject(value, typeof keyval[1].value);
 						this.plugin.saveSettings();
