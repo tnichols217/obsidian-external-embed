@@ -1,6 +1,21 @@
 # Obsidian Iframes
-This plugin allows you to use the iframe tag in your obsidian notes to refer to local files.
-Works by replacing the src attribute of the iframe tag with a global path using the file:// URI scheme.
+This plugin allows you to use the iframe tag in your obsidian notes to refer to local files.\
+Works by replacing the src attribute of the iframe tag with a global path using the file:// URI scheme.\
+Also adds three custom syntaxes to import other files into the current file: iframe, import, and paste.\
+
+## Custom commands
+### paste
+Execute by typing `!!!paste` followed by a path to a file or URL.
+Will simply replace the command with the raw file contents before getting rerendered as MD
+Executes first out of all three commands
+
+### iframe
+Execute by typing `!!!iframe` followed by a path to a file or URL to iframe, if its an MD file, it will render it
+Simply replaces the command with an iframe tag
+
+### import
+Execute by typing `!!!iframe` followed by a path to a file or URL. Will attempt to convert an html page into MD before rendering it
+Will replace the command with rendered MD
 
 ## MD files
 This plugin also allows you to "iframe" an MD file, which will include its code in the document (can be another document or an online source). You can also name the iframe with a "iframe-md" class to attempt to convert html to md

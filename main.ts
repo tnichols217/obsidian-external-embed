@@ -1,5 +1,5 @@
 import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App, MarkdownRenderChild, request } from 'obsidian';
-import { copyFileSync, readFile } from "fs"
+import { readFile, stat } from "fs"
 import axios from "axios"
 import html2md from 'html-to-md'
 
@@ -11,8 +11,9 @@ const IGNOREDTAGS = [CONVERTMD, "src", "sandbox"]
 const PREFIX = "!!!"
 const IMPORTNAME = "import"
 const IFRAMENAME = "iframe"
+const PASTENAME = "paste"
 
-let CACHE: Record<string, Record<string, string>> = {"true": {}, "false":{}}
+let CACHE: Record<string, Record<string, string>> = { "true": {}, "false": {} }
 
 interface settingItem<T> {
 	value: T
@@ -21,11 +22,13 @@ interface settingItem<T> {
 }
 
 interface iframeSettings {
-	allowInet: settingItem<boolean>
+	allowInet: settingItem<boolean>,
+	recursionDepth: settingItem<number>
 }
 
 const DEFAULT_SETTINGS: iframeSettings = {
-	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." }
+	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
+	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." }
 }
 
 let parseBoolean = (value: string) => {
@@ -45,15 +48,16 @@ let parseObject = (value: any, typ: string) => {
 }
 
 let processURI = (URI: string, source: string, root: string): string => {
+	URI = URI.split("<")[0]
 	if (!URI.contains("://")) {
 		if (URI.startsWith("/")) {
 			return [URISCHEME, root, URI].join("")
 		}
 		else if (URI.startsWith("./")) {
-			return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(1)].join("")
+			return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("")
 		}
 		else {
-			return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), "/", URI].join("")
+			return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI].join("")
 		}
 	}
 	return URI
@@ -68,7 +72,16 @@ let getURI = (URI: string, convert?: boolean, allowInet?: boolean): Promise<stri
 		let url = new URL(URI)
 		if (url.protocol == "file:") {
 			readFile(url.pathname, (e, d) => {
-				if (e) reject(e)
+				if (e) {
+					if (e.code == "ENOENT") {
+						resolve("")
+						return
+					} else {
+						reject(e)
+						reject(e.code)
+						return
+					}
+				}
 				let dString = d.toString()
 				if (convert) {
 					dString = html2md(dString)
@@ -92,19 +105,28 @@ let getURI = (URI: string, convert?: boolean, allowInet?: boolean): Promise<stri
 	})
 }
 
-let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext): Promise<void> => {
+let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, maxDepth: number, additionalCallback?: (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void): Promise<void> => {
+
 	const sourcePath = context.sourcePath;
 	let renderDiv = new MarkdownRenderChild(div)
 	context.addChild(renderDiv)
+	if (recursiveDepth > maxDepth) {
+		div.createEl("p", source)
+		return new Promise((resolve, reject) => { resolve })
+	}
 	return MarkdownRenderer.renderMarkdown(
 		source,
 		div,
 		sourcePath,
 		renderDiv
-	);
+	).then(() => {
+		if (additionalCallback) {
+			additionalCallback(div, context, source, recursiveDepth + 1)
+		}
+	})
 }
 
-let renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, allowInet?: boolean, attributes?: NamedNodeMap, convertHTML?: boolean): Promise<void> => {
+let renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, recursiveDepth: number, maxDepth: number, allowInet?: boolean, attributes?: NamedNodeMap, convertHTML?: boolean, additionalCallback?: (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void): Promise<void> => {
 	return new Promise<void>(async (resolve, reject) => {
 		let endsMD = src.endsWith(".md")
 
@@ -121,7 +143,7 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 						div.setAttribute(i.nodeName, i.nodeValue)
 					}
 				})
-				await renderMD(source, div, context)
+				await renderMD(source, div, context, recursiveDepth, maxDepth, additionalCallback)
 				resolve()
 			}
 
@@ -148,7 +170,7 @@ export default class ObsidianIframes extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new ObsidianIframeSettings(this.app, this));
 
-		let processIframe = (element: Element, context: MarkdownPostProcessorContext) => {
+		let processIframe = (element: Element, context: MarkdownPostProcessorContext, recursionDepth: number = 0) => {
 			let iframes = element.querySelectorAll("iframe")
 			for (let child of Array.from(iframes)) {
 				let src = processURI(child.getAttribute("src"), context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
@@ -158,59 +180,100 @@ export default class ObsidianIframes extends Plugin {
 				let classAttrib = child.getAttribute("class")
 				let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
 
-				renderURI(src, element, context, this.settings.allowInet.value, child.attributes, convertHTML)
+				renderURI(src, element, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, child.attributes, convertHTML, markdownPostProcessor)
 			}
 		}
 
-		let processCustomCommands = async (element: Element, context: MarkdownPostProcessorContext) => {
+		let processCustomCommands = async (element: Element, context: MarkdownPostProcessorContext, MDtextString?: string, recursionDepth: number = 0) => {
 			let textContent = element.textContent
-			let ctx = context.getSectionInfo(element as HTMLElement)
-			if (ctx == null) {
-				return
+			let MDtext
+			if (MDtextString == null) {
+				let ctx = context.getSectionInfo(element as HTMLElement)
+				if (ctx == null) {
+					return
+				}
+				MDtext = ctx.text.split("\n").slice(ctx.lineStart, ctx.lineEnd + 1)
+			} else {
+				MDtext = MDtextString.split("\n")
 			}
-			if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
-				let MDtext = ctx.text.split("\n").slice(ctx.lineStart, ctx.lineEnd + 1)
-				let mappedMD = await Promise.all(MDtext.map(async (line) => {
-					if (line.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
+			if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME) || textContent.contains(PREFIX + PASTENAME)) {
+				let mappedMD = MDtext.map(async (line) => {
+					if (line.contains(PREFIX + IMPORTNAME) || line.contains(PREFIX + IFRAMENAME) || line.contains(PREFIX + PASTENAME)) {
 						let words = line.split(" ")
+
+						{
+							let contains
+							for (let i = recursionDepth; i < this.settings.recursionDepth.value; i++) {
+								words = words.map(i => i.trim())
+								contains = false
+
+								for (let index = words.length - 1; index >= 1; index--) {
+									let prevWord = words[index - 1]
+									if (prevWord.endsWith(PREFIX + PASTENAME)) {
+										contains = true
+										words.splice(index - 1, 2, ...(await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), false, this.settings.allowInet.value)).split(" "))
+									}
+								}
+								line = words.join(" ")
+								words = line.split(" ")
+								if (!contains) {
+									continue
+								}
+							}
+						}
+
+
+						words[words.length - 1] = words[words.length - 1].replace(PREFIX + IMPORTNAME, "").replace(PREFIX + IFRAMENAME, "").replace(PREFIX + PASTENAME, "")
+						line = words.join(" ")
+
+
+
+
 						let strings: { string: string, URI: string, type: string }[] = []
 						for (let [index, word] of Array.from(words).slice(1).entries()) {
+							word = word.trim()
 							let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "")
-
 							if (commandname) {
 								strings.push({ string: commandname + " " + word, URI: processURI(word, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), type: commandname })
 							}
 						}
 						for (let promiseString of strings) {
-							let div = createEl("div")
+							let replaceString = ""
 							if (promiseString.type == PREFIX + IMPORTNAME) {
-								await renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"))
-								line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""))
-							} else {
-								await renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, false)
+								let div = createEl("div")
+								await renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"), markdownPostProcessor)
+								replaceString = div.innerHTML.replace("\n", "")
+							} else if (promiseString.type == PREFIX + IFRAMENAME) {
+								let div = createEl("div")
+								await renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, false, markdownPostProcessor)
+								replaceString = div.innerHTML.replace("\n", "")
 							}
-							line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""))
+							line = line.replace(promiseString.string, replaceString)
 						}
 					}
 					return line
-				}))
-				Array.from(element.children).forEach((i) => {
-					element.removeChild(i)
 				})
-				renderMD(mappedMD.join("\n"), element.createEl("div"), context)
+				Promise.all(mappedMD).then((mappedMDResolved) => {
+					Array.from(element.children).forEach((i) => {
+						element.removeChild(i)
+					})
+					renderMD(mappedMDResolved.join("\n"), element.createEl("div"), context, recursionDepth + 1, this.settings.recursionDepth.value, markdownPostProcessor)
+				})
 			}
 		}
 
-		let markdownPostProcessor = (element: Element, context: MarkdownPostProcessorContext) => {
-			processCustomCommands(element, context)
-			processIframe(element, context)
+		let markdownPostProcessor = (element: Element, context: MarkdownPostProcessorContext, MDtext?: string, recursion: number = 0) => {
+			processCustomCommands(element, context, MDtext, recursion);
+			processIframe(element, context, recursion)
 		}
 
 		this.registerMarkdownPostProcessor(markdownPostProcessor);
 
-		this.addCommand({id:"clear_cache", name: "Clear Iframe Cache", callback: () => {
-			CACHE = {"true": {}, "false":{}}
-		}})
+		this.addCommand({
+			id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
+				CACHE = { "true": {}, "false": {} }
+			}
+		})
 	}
 
 	onunload() {

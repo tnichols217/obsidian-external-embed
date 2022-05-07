@@ -3030,9 +3030,11 @@ var IGNOREDTAGS = [CONVERTMD, "src", "sandbox"];
 var PREFIX = "!!!";
 var IMPORTNAME = "import";
 var IFRAMENAME = "iframe";
+var PASTENAME = "paste";
 var CACHE = { "true": {}, "false": {} };
 var DEFAULT_SETTINGS = {
-  allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." }
+  allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
+  recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." }
 };
 var parseBoolean = (value) => {
   return value == "yes" || value == "true";
@@ -3049,13 +3051,14 @@ var parseObject = (value, typ) => {
   }
 };
 var processURI = (URI, source, root) => {
+  URI = URI.split("<")[0];
   if (!URI.contains("://")) {
     if (URI.startsWith("/")) {
       return [URISCHEME, root, URI].join("");
     } else if (URI.startsWith("./")) {
-      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(1)].join("");
+      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("");
     } else {
-      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), "/", URI].join("");
+      return [URISCHEME, root, "/", source.substring(0, source.lastIndexOf("/")), URI].join("");
     }
   }
   return URI;
@@ -3069,8 +3072,16 @@ var getURI = (URI, convert, allowInet) => {
     let url = new URL(URI);
     if (url.protocol == "file:") {
       (0, import_fs.readFile)(url.pathname, (e, d) => {
-        if (e)
-          reject(e);
+        if (e) {
+          if (e.code == "ENOENT") {
+            resolve("");
+            return;
+          } else {
+            reject(e);
+            reject(e.code);
+            return;
+          }
+        }
         let dString = d.toString();
         if (convert) {
           dString = (0, import_html_to_md.default)(dString);
@@ -3093,13 +3104,23 @@ var getURI = (URI, convert, allowInet) => {
     }
   });
 };
-var renderMD = (source, div, context) => {
+var renderMD = (source, div, context, recursiveDepth, maxDepth, additionalCallback) => {
   const sourcePath = context.sourcePath;
   let renderDiv = new import_obsidian.MarkdownRenderChild(div);
   context.addChild(renderDiv);
-  return import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, renderDiv);
+  if (recursiveDepth > maxDepth) {
+    div.createEl("p", source);
+    return new Promise((resolve, reject) => {
+      resolve;
+    });
+  }
+  return import_obsidian.MarkdownRenderer.renderMarkdown(source, div, sourcePath, renderDiv).then(() => {
+    if (additionalCallback) {
+      additionalCallback(div, context, source, recursiveDepth + 1);
+    }
+  });
 };
-var renderURI = (src, element, context, allowInet, attributes, convertHTML) => __async(void 0, null, function* () {
+var renderURI = (src, element, context, recursiveDepth, maxDepth, allowInet, attributes, convertHTML, additionalCallback) => __async(void 0, null, function* () {
   return new Promise((resolve, reject) => __async(void 0, null, function* () {
     let endsMD = src.endsWith(".md");
     Array.from(element.children).forEach((i) => {
@@ -3113,7 +3134,7 @@ var renderURI = (src, element, context, allowInet, attributes, convertHTML) => _
             div.setAttribute(i.nodeName, i.nodeValue);
           }
         });
-        yield renderMD(source, div, context);
+        yield renderMD(source, div, context, recursiveDepth, maxDepth, additionalCallback);
         resolve();
       });
       getURI(src, convertHTML && !endsMD, allowInet).then(fileContentCallback).catch(console.error);
@@ -3134,61 +3155,97 @@ var ObsidianIframes = class extends import_obsidian.Plugin {
     return __async(this, null, function* () {
       yield this.loadSettings();
       this.addSettingTab(new ObsidianIframeSettings(this.app, this));
-      let processIframe = (element, context) => {
+      let processIframe = (element, context, recursionDepth = 0) => {
         let iframes = element.querySelectorAll("iframe");
         for (let child of Array.from(iframes)) {
           let src = processURI(child.getAttribute("src"), context.sourcePath, this.app.vault.adapter.getBasePath());
           child.setAttribute("src", src);
           let classAttrib = child.getAttribute("class");
           let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
-          renderURI(src, element, context, this.settings.allowInet.value, child.attributes, convertHTML);
+          renderURI(src, element, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, child.attributes, convertHTML, markdownPostProcessor);
         }
       };
-      let processCustomCommands = (element, context) => __async(this, null, function* () {
+      let processCustomCommands = (element, context, MDtextString, recursionDepth = 0) => __async(this, null, function* () {
         let textContent = element.textContent;
-        let ctx = context.getSectionInfo(element);
-        if (ctx == null) {
-          return;
+        let MDtext;
+        if (MDtextString == null) {
+          let ctx = context.getSectionInfo(element);
+          if (ctx == null) {
+            return;
+          }
+          MDtext = ctx.text.split("\n").slice(ctx.lineStart, ctx.lineEnd + 1);
+        } else {
+          MDtext = MDtextString.split("\n");
         }
-        if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
-          let MDtext = ctx.text.split("\n").slice(ctx.lineStart, ctx.lineEnd + 1);
-          let mappedMD = yield Promise.all(MDtext.map((line) => __async(this, null, function* () {
-            if (line.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME)) {
+        if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME) || textContent.contains(PREFIX + PASTENAME)) {
+          let mappedMD = MDtext.map((line) => __async(this, null, function* () {
+            if (line.contains(PREFIX + IMPORTNAME) || line.contains(PREFIX + IFRAMENAME) || line.contains(PREFIX + PASTENAME)) {
               let words = line.split(" ");
+              {
+                let contains;
+                for (let i = recursionDepth; i < this.settings.recursionDepth.value; i++) {
+                  words = words.map((i2) => i2.trim());
+                  contains = false;
+                  for (let index = words.length - 1; index >= 1; index--) {
+                    let prevWord = words[index - 1];
+                    if (prevWord.endsWith(PREFIX + PASTENAME)) {
+                      contains = true;
+                      words.splice(index - 1, 2, ...(yield getURI(processURI(words[index], context.sourcePath, this.app.vault.adapter.getBasePath()), false, this.settings.allowInet.value)).split(" "));
+                    }
+                  }
+                  line = words.join(" ");
+                  words = line.split(" ");
+                  if (!contains) {
+                    continue;
+                  }
+                }
+              }
+              words[words.length - 1] = words[words.length - 1].replace(PREFIX + IMPORTNAME, "").replace(PREFIX + IFRAMENAME, "").replace(PREFIX + PASTENAME, "");
+              line = words.join(" ");
               let strings = [];
               for (let [index, word] of Array.from(words).slice(1).entries()) {
+                word = word.trim();
                 let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "");
                 if (commandname) {
                   strings.push({ string: commandname + " " + word, URI: processURI(word, context.sourcePath, this.app.vault.adapter.getBasePath()), type: commandname });
                 }
               }
               for (let promiseString of strings) {
-                let div = createEl("div");
+                let replaceString = "";
                 if (promiseString.type == PREFIX + IMPORTNAME) {
-                  yield renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"));
-                  line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""));
-                } else {
-                  yield renderURI(promiseString.URI, div, context, this.settings.allowInet.value, div.attributes, false);
+                  let div = createEl("div");
+                  yield renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, !promiseString.URI.endsWith(".md"), markdownPostProcessor);
+                  replaceString = div.innerHTML.replace("\n", "");
+                } else if (promiseString.type == PREFIX + IFRAMENAME) {
+                  let div = createEl("div");
+                  yield renderURI(promiseString.URI, div, context, recursionDepth + 1, this.settings.recursionDepth.value, this.settings.allowInet.value, div.attributes, false, markdownPostProcessor);
+                  replaceString = div.innerHTML.replace("\n", "");
                 }
-                line = line.replace(promiseString.string, div.innerHTML.replace("\n", ""));
+                line = line.replace(promiseString.string, replaceString);
               }
             }
             return line;
-          })));
-          Array.from(element.children).forEach((i) => {
-            element.removeChild(i);
+          }));
+          Promise.all(mappedMD).then((mappedMDResolved) => {
+            Array.from(element.children).forEach((i) => {
+              element.removeChild(i);
+            });
+            renderMD(mappedMDResolved.join("\n"), element.createEl("div"), context, recursionDepth + 1, this.settings.recursionDepth.value, markdownPostProcessor);
           });
-          renderMD(mappedMD.join("\n"), element.createEl("div"), context);
         }
       });
-      let markdownPostProcessor = (element, context) => {
-        processCustomCommands(element, context);
-        processIframe(element, context);
+      let markdownPostProcessor = (element, context, MDtext, recursion = 0) => {
+        processCustomCommands(element, context, MDtext, recursion);
+        processIframe(element, context, recursion);
       };
       this.registerMarkdownPostProcessor(markdownPostProcessor);
-      this.addCommand({ id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
-        CACHE = { "true": {}, "false": {} };
-      } });
+      this.addCommand({
+        id: "clear_cache",
+        name: "Clear Iframe Cache",
+        callback: () => {
+          CACHE = { "true": {}, "false": {} };
+        }
+      });
     });
   }
   onunload() {
