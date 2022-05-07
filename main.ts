@@ -1,6 +1,5 @@
 import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, MarkdownRenderer, PluginSettingTab, Setting, App, MarkdownRenderChild, request } from 'obsidian';
 import { readFile, stat } from "fs"
-import axios from "axios"
 import html2md from 'html-to-md'
 
 const URISCHEME = "file://"
@@ -15,7 +14,7 @@ const PASTENAME = "paste"
 const EMPTYCACHE = { value: { "true": {}, "false": {} }, time: { "true": {}, "false": {} } }
 
 let CACHE: cacheType = EMPTYCACHE
-let SETTINGS: iframeSettings
+let SETTINGS: dynamicImportSettings
 
 type cacheItem<T> = Record<string, Record<string, T>>
 
@@ -32,14 +31,14 @@ interface settingItem<T> {
 	desc?: string
 }
 
-interface iframeSettings {
+interface dynamicImportSettings {
 	allowInet: settingItem<boolean>
 	recursionDepth: settingItem<number>
 	useCacheForFiles: settingItem<boolean>
 	cacheRefreshTime: settingItem<number>
 }
 
-const DEFAULT_SETTINGS: iframeSettings = {
+const DEFAULT_SETTINGS: dynamicImportSettings = {
 	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
 	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." },
 	useCacheForFiles: { value: false, name: "Cache Local Files", desc: "Cache files instead of loading them on every rerender. (Remote Files will always be cached)" },
@@ -185,12 +184,12 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 	})
 }
 
-export default class ObsidianIframes extends Plugin {
+export default class ObsidianDynamicImport extends Plugin {
 
 	async onload() {
 
 		await this.loadSettings();
-		this.addSettingTab(new ObsidianIframeSettings(this.app, this));
+		this.addSettingTab(new ObsidianDynamicImportSettings(this.app, this));
 
 		let processIframe = (element: Element, context: MarkdownPostProcessorContext, recursionDepth: number = 0) => {
 			let iframes = element.querySelectorAll("iframe")
@@ -311,10 +310,10 @@ export default class ObsidianIframes extends Plugin {
 	}
 }
 
-class ObsidianIframeSettings extends PluginSettingTab {
-	plugin: ObsidianIframes;
+class ObsidianDynamicImportSettings extends PluginSettingTab {
+	plugin: ObsidianDynamicImport;
 
-	constructor(app: App, plugin: ObsidianIframes) {
+	constructor(app: App, plugin: ObsidianDynamicImport) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

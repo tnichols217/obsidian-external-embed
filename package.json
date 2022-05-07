@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-iframes",
+	"name": "obsidian-dynamic-import",
 	"version": "1.0.9",
-	"description": "Allows you to create relative iframes and MD iframes in Obsidian",
+	"description": "Allows you to Import other MD files into your notes, and improves iframes",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
