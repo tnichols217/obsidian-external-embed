@@ -24,7 +24,7 @@ This plugin also allows you to "iframe" an MD file, which will include its code 
 ## Filesystem Access
 - Starting a src with "/" will start from the root of your vault
 - Starting without a slash will use relative directories from the current MD file
-- If youd like to use a file outside of your valut, prefix the src with "file://"
+- Files outside your vault cannot be accessed due to a limitation in the obsidian dataAdapter API
 
 ## Examples
 ### Importing MD files with the \<iframe> tag
