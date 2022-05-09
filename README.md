@@ -18,6 +18,10 @@ Simply replaces the command with an iframe tag
 Execute by typing `!!!iframe` followed by a path to a file or URL. Will attempt to convert an html page into MD before rendering it
 Will replace the command with rendered MD
 
+### inline
+Execute by typing `!!!inline` followed by a path to a file or URL. Will insert the html file into where the command was called from inline
+Similar to paste, it also has the additional `!` for removing the space afterwards
+
 ## MD files
 This plugin also allows you to "iframe" an MD file, which will include its code in the document (can be another document or an online source). You can also name the iframe with a "iframe-md" class to attempt to convert html to md
 
@@ -32,7 +36,7 @@ To use, just use the src attribute in an iframe tag:
 ![image](https://user-images.githubusercontent.com/62992267/166679372-ca3e8dcb-b5ce-47a0-b49a-09d71478f185.png)
 
 Produced with the following MD:
-```
+```md
 # Stuff outside the iframe
 - Example list
 
@@ -43,7 +47,7 @@ Produced with the following MD:
 ![image](https://user-images.githubusercontent.com/62992267/166702025-36436b98-5ef6-432e-a6bd-4b22a3afe247.png)
 
 Produced with the following MD:
-```
+```md
 # Stuff outside the iframe
 - Example list
 
@@ -86,9 +90,53 @@ The filename to be imported is defined inside the fileToLoad.md file
 !!!import !!!paste fileToLoad.md
 ```
 
+### Using the `!!!inline` command
+![image](https://user-images.githubusercontent.com/62992267/167395039-d56466b7-3ef5-4204-8020-f19b9ff05221.png)
+
+```md
+# This is file exmaple.md
+## The current time is: !!!inline clock.md 
+
+You can even put it in the middle **(!!!!inline clock.md )** of a paragraph:
+```
+
+clock.md
+```html
+<span onload='
+	let getTime = () => {
+		let date = new Date(); 
+		let hh = date.getHours();
+		let mm = date.getMinutes();
+		let ss = date.getSeconds();
+		
+		hh = (hh < 10) ? "0" + hh : hh;
+		mm = (mm < 10) ? "0" + mm : mm;
+		ss = (ss < 10) ? "0" + ss : ss;
+		
+		return hh + ":" + mm + ":" + ss;
+	};
+	let updateTime = async () => {
+		let time = getTime();
+		this.innerText=time;
+		setTimeout(updateTime, 100);
+	};
+	updateTime()'></span>
+```
+
 ## Settings
 ### Allow Internet
 Allows the plugin to include MD files from the internet.
 
+### Allow inline
+Allows access to the inline command\
+Insecure because it allows arbitrary HTML (and js) code to run
+
 ### Recursion Depth
 Blocks recursive imports past this depth. 
+
+### Cache Local Files
+Cache local files instead of rereading upon every update\
+Remote files are always cached
+
+### Cache refresh time (milliseconds)
+How old a cache item has to be before it is reloaded
