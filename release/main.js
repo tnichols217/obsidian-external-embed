@@ -3065,13 +3065,20 @@ var processURI = (URI, source, root) => {
     if (URI.startsWith("/")) {
       return [URISCHEME, URI].join("");
     } else if (URI.startsWith("./")) {
-      return [URISCHEME, "/" + source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("");
+      return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("");
     } else {
-      return [URISCHEME, "/" + source.substring(0, source.lastIndexOf("/")), URI].join("");
+      return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI].join("");
     }
   }
   return URI;
 };
+var processFullURI = (URI, FSAdapter) => __async(void 0, null, function* () {
+  let url = new URL(URI);
+  if (yield FSAdapter.exists(url.pathname)) {
+    url.pathname = FSAdapter.getBasePath() + url.pathname;
+  }
+  return url.toString();
+});
 var getURI = (URI, FSAdapter, convert) => {
   return new Promise((resolve, reject) => {
     let c = convert.toString();
@@ -3133,7 +3140,6 @@ var renderURI = (src, element, context, recursiveDepth, FSAdapter, attributes, c
     iframe.addClass(IFRAMECLASS, DIVCLASS);
     iframe.scroll = () => {
       iframe.style.height = iframe.contentWindow.document.body.scrollHeight + "px";
-      console.log(iframe.style.height);
     };
   };
   let setMD = (div) => {
@@ -3172,15 +3178,15 @@ var renderURI = (src, element, context, recursiveDepth, FSAdapter, attributes, c
       });
       getURI(src, FSAdapter, convertHTML && !endsMD).then(fileContentCallback).catch(reject);
     } else {
-      let div = element.createEl("iframe");
+      let iframe = element.createEl("iframe");
       Array.from(attributes).forEach((i) => {
         if (!IGNOREDTAGS.contains(i.nodeName)) {
-          div.setAttribute(i.nodeName, i.nodeValue);
+          iframe.setAttribute(i.nodeName, i.nodeValue);
         }
       });
-      div.setAttribute("src", src);
-      setIframe(div);
-      resolve(div);
+      iframe.src = yield processFullURI(src, FSAdapter);
+      setIframe(iframe);
+      resolve(iframe);
     }
   }));
 });
@@ -3192,11 +3198,16 @@ var ObsidianDynamicImport = class extends import_obsidian.Plugin {
       let processIframe = (element, context, recursionDepth = 0) => {
         let iframes = element.querySelectorAll("iframe");
         for (let child of Array.from(iframes)) {
-          let src = processURI(child.getAttribute("src"), context.sourcePath, this.app.vault.adapter.getBasePath());
-          child.setAttribute("src", src);
-          let classAttrib = child.getAttribute("class");
-          let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
-          renderURI(src, element, context, recursionDepth + 1, this.app.vault.adapter, child.attributes, convertHTML, false, markdownPostProcessor);
+          let attr = child.getAttribute("src");
+          if (attr != null) {
+            let src = processURI(attr, context.sourcePath, this.app.vault.adapter.getBasePath());
+            let classAttrib = child.getAttribute("class");
+            let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
+            renderURI(src, element, context, recursionDepth + 1, this.app.vault.adapter, child.attributes, convertHTML, false, markdownPostProcessor).then((iframe) => {
+              let src2 = new URL(iframe.src);
+              iframe.src = "app://local" + src2.pathname;
+            });
+          }
         }
       };
       let processCustomCommands = (element, context, MDtextString, recursionDepth = 0) => __async(this, null, function* () {
@@ -3234,7 +3245,6 @@ var ObsidianDynamicImport = class extends import_obsidian.Plugin {
                       } else {
                         replaceString.push(words[index + 1]);
                       }
-                      console.log();
                       words.splice(index - 1, 3, ...replaceString);
                       words[index - 1] = beforeTag + words[index - 1];
                     }
@@ -3274,7 +3284,6 @@ var ObsidianDynamicImport = class extends import_obsidian.Plugin {
                     yield renderURI(promiseString.URI, div, context, recursionDepth + 1, this.app.vault.adapter, div.attributes, false, false, markdownPostProcessor);
                   }
                   replaceString = div.innerHTML.replace("\n", "");
-                  console.log(replaceString);
                   line = line.replace(promiseString.string, replaceString);
                 }
               }
@@ -3290,7 +3299,6 @@ var ObsidianDynamicImport = class extends import_obsidian.Plugin {
             for (let inline of inlines) {
               for (let el of Array.from(newDiv.querySelectorAll("*"))) {
                 if ("innerText" in el && el.innerText.contains(inline.URI)) {
-                  console.log(el.innerHTML);
                   el.innerHTML = el.innerHTML.replace(inline.URI, inline.string);
                 }
               }
@@ -3326,7 +3334,6 @@ var ObsidianDynamicImport = class extends import_obsidian.Plugin {
   }
   saveSettings() {
     return __async(this, null, function* () {
-      console.log("SAVING", SETTINGS);
       yield this.saveData(SETTINGS);
     });
   }
