@@ -140,3 +140,7 @@ Remote files are always cached
 
 ### Cache refresh time (milliseconds)
 How old a cache item has to be before it is reloaded
+
+If you enjoy my plugin, please consider supporting me:
+
+<a href="https://www.buymeacoffee.com/tnichols217" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="217" height="60" /></a>
