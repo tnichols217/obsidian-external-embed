@@ -74,13 +74,21 @@ let processURI = (URI: string, source: string, root: string): string => {
 			return [URISCHEME, URI].join("")
 		}
 		else if (URI.startsWith("./")) {
-			return [URISCHEME, "/" + source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("")
+			return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("")
 		}
 		else {
-			return [URISCHEME, "/" + source.substring(0, source.lastIndexOf("/")), URI].join("")
+			return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI].join("")
 		}
 	}
 	return URI
+}
+
+let processFullURI = async (URI: string, FSAdapter: FileSystemAdapter): Promise<string> => {
+	let url = new URL(URI)
+	if (await FSAdapter.exists(url.pathname)) {
+		url.pathname = FSAdapter.getBasePath() + url.pathname
+	}
+	return url.toString()
 }
 
 let getURI = (URI: string, FSAdapter: FileSystemAdapter, convert?: boolean): Promise<string> => {
@@ -150,7 +158,6 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 		iframe.addClass(IFRAMECLASS, DIVCLASS)
 		iframe.scroll = () => {
 			iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
-			console.log(iframe.style.height)
 		}
 	}
 	let setMD = (div: HTMLDivElement) => {
@@ -189,15 +196,15 @@ let renderURI = async (src: string, element: Element, context: MarkdownPostProce
 			}
 			getURI(src, FSAdapter, convertHTML && !endsMD).then(fileContentCallback).catch(reject)
 		} else {
-			let div = element.createEl("iframe")
+			let iframe = element.createEl("iframe")
 			Array.from(attributes).forEach((i) => {
 				if (!IGNOREDTAGS.contains(i.nodeName)) {
-					div.setAttribute(i.nodeName, i.nodeValue)
+					iframe.setAttribute(i.nodeName, i.nodeValue)
 				}
 			})
-			div.setAttribute("src", src)
-			setIframe(div)
-			resolve(div)
+			iframe.src = await processFullURI(src, FSAdapter)
+			setIframe(iframe)
+			resolve(iframe)
 		}
 	})
 }
@@ -211,14 +218,18 @@ export default class ObsidianDynamicImport extends Plugin {
 		let processIframe = (element: Element, context: MarkdownPostProcessorContext, recursionDepth: number = 0) => {
 			let iframes = element.querySelectorAll("iframe")
 			for (let child of Array.from(iframes)) {
-				let src = processURI(child.getAttribute("src"), context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
+				let attr = child.getAttribute("src")
+				if (attr != null) {
+					let src = processURI(attr, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
 
-				child.setAttribute("src", src)
-
-				let classAttrib = child.getAttribute("class")
-				let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
-
-				renderURI(src, element, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), child.attributes, convertHTML, false, markdownPostProcessor)
+					let classAttrib = child.getAttribute("class")
+					let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
+	
+					renderURI(src, element, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), child.attributes, convertHTML, false, markdownPostProcessor).then((iframe: HTMLIFrameElement) => {
+						let src = new URL(iframe.src)
+						iframe.src = "app://local" + src.pathname
+					})
+				}
 			}
 		}
 
@@ -260,7 +271,6 @@ export default class ObsidianDynamicImport extends Plugin {
 										} else {
 											replaceString.push(words[index + 1])
 										}
-										console.log()
 										words.splice(index - 1, 3, ...replaceString)
 										words[index - 1] = beforeTag + words[index - 1]
 
@@ -295,7 +305,6 @@ export default class ObsidianDynamicImport extends Plugin {
 								if (line.contains(promiseString.string[0] + promiseString.string)) {
 									line = line.replace(promiseString.string[0] + promiseString.string + " ", promiseString.string)
 								}
-								/* MOVE THIS TO AFTER MD GETS RENDERED */
 								await renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), inlineTempDiv.attributes, false, true, markdownPostProcessor)
 								let replaceString = inlineTempDiv.innerHTML.replace("\n", "")
 								inlines.push({string: replaceString, URI: promiseString.string})
@@ -309,7 +318,6 @@ export default class ObsidianDynamicImport extends Plugin {
 									await renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, false, false, markdownPostProcessor)
 								}
 								replaceString = div.innerHTML.replace("\n", "")
-								console.log(replaceString)
 								line = line.replace(promiseString.string, replaceString)
 							}
 						}
@@ -326,8 +334,6 @@ export default class ObsidianDynamicImport extends Plugin {
 						// newDiv.innerHTML = newDiv.innerHTML.replace(inline.URI, inline.string)
 						for (let el of Array.from(newDiv.querySelectorAll("*"))) {
 							if ("innerText" in el && (el as HTMLElement).innerText.contains(inline.URI)) {
-								// (el as HTMLElement).innerText = (el as HTMLElement).innerText.replace(inline.URI, inline.string.replace("\n", ""))
-								console.log(el.innerHTML)
 								el.innerHTML = el.innerHTML.replace(inline.URI, inline.string)
 							}
 						}
@@ -365,7 +371,6 @@ export default class ObsidianDynamicImport extends Plugin {
 	}
 
 	async saveSettings() {
-		console.log("SAVING", SETTINGS)
 		await this.saveData(SETTINGS);
 	}
 }
