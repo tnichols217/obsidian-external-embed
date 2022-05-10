@@ -17,33 +17,31 @@ const INLINENAME = "inline"
 const PASTENAME = "paste"
 const EMPTYCACHE = { value: { "true": {}, "false": {} }, time: { "true": {}, "false": {} } }
 
-let CACHE: cacheType = EMPTYCACHE
-let SETTINGS: dynamicImportSettings
 
-type cacheItem<T> = Record<string, Record<string, T>>
+type CacheItem<T> = Record<string, Record<string, T>>
 
-type extraCallback = (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void
+type ExtraCallback = (element: Element, context: MarkdownPostProcessorContext, MDtext: string, recursionDepth: number) => Promise<void> | void
 
-interface cacheType {
-	value: cacheItem<string>
-	time: cacheItem<Date>
+interface CacheType {
+	value: CacheItem<string>
+	time: CacheItem<Date>
 }
 
-interface settingItem<T> {
+interface SettingItem<T> {
 	value: T
 	name?: string
 	desc?: string
 }
 
-interface dynamicImportSettings {
-	allowInet: settingItem<boolean>
-	allowInline: settingItem<boolean>
-	recursionDepth: settingItem<number>
-	useCacheForFiles: settingItem<boolean>
-	cacheRefreshTime: settingItem<number>
+interface DynamicImportSettings {
+	allowInet: SettingItem<boolean>
+	allowInline: SettingItem<boolean>
+	recursionDepth: SettingItem<number>
+	useCacheForFiles: SettingItem<boolean>
+	cacheRefreshTime: SettingItem<number>
 }
 
-const DEFAULT_SETTINGS: dynamicImportSettings = {
+const DEFAULT_SETTINGS: DynamicImportSettings = {
 	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
 	allowInline: { value: false, name: "Allows access to the inline command", desc: "Enables the !!!inline command, which allows arbitrary HTML code to run (insecure)" },
 	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." },
@@ -51,165 +49,170 @@ const DEFAULT_SETTINGS: dynamicImportSettings = {
 	cacheRefreshTime: { value: 30000, name: "Cache Refresh Time (miliseconds)", desc: "Cached filed called over this time ago will be refreshed when rendered." }
 }
 
-let parseBoolean = (value: string) => {
-	return (value == "yes" || value == "true")
-}
 
-let parseObject = (value: any, typ: string) => {
-	if (typ == "string") {
-		return value
-	}
-	if (typ == "boolean") {
-		return parseBoolean(value)
-	}
-	if (typ == "number") {
-		return parseFloat(value)
-	}
-}
-
-let processURI = (URI: string, source: string, root: string): string => {
-	URI = URI.split("<")[0]
-	if (!URI.contains("://")) {
-		if (URI.startsWith("/")) {
-			return [URISCHEME, URI].join("")
-		}
-		else if (URI.startsWith("./")) {
-			return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("")
-		}
-		else {
-			return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI].join("")
-		}
-	}
-	return URI
-}
-
-let processFullURI = async (URI: string, FSAdapter: FileSystemAdapter): Promise<string> => {
-	let url = new URL(URI)
-	if (await FSAdapter.exists(url.pathname)) {
-		url.pathname = FSAdapter.getBasePath() + url.pathname
-	}
-	return url.toString()
-}
-
-let getURI = (URI: string, FSAdapter: FileSystemAdapter, convert?: boolean): Promise<string> => {
-	return new Promise<string>((resolve, reject) => {
-		let c = convert.toString()
-		let url = new URL(URI)
-		if (url.protocol == "file:") {
-			if (SETTINGS.useCacheForFiles.value && CACHE.value[c].hasOwnProperty(URI) && (new Date().getTime() - CACHE.time[c][URI].getTime() < SETTINGS.cacheRefreshTime.value)) {
-				resolve(CACHE.value[c][URI])
-				return
-			}
-			FSAdapter.read(url.pathname).then((d) => {
-				let dString = d.toString()
-				if (convert) {
-					dString = html2md(dString)
-				}
-				if (SETTINGS.useCacheForFiles.value) {
-					CACHE.value[c][URI] = dString
-					CACHE.time[c][URI] = new Date()
-				}
-				resolve(dString)
-			}).catch(console.error)
-		} else {
-			if (CACHE.value[c].hasOwnProperty(URI) && (new Date().getTime() - CACHE.time[c][URI].getTime() < SETTINGS.cacheRefreshTime.value)) {
-				resolve(CACHE.value[c][URI])
-				return
-			}
-			if (SETTINGS.allowInet.value) {
-				request({ url: url.href }).then((a) => {
-					if (convert) {
-						a = html2md(a)
-					}
-					CACHE.value[c][URI] = a
-					CACHE.time[c][URI] = new Date()
-					resolve(a)
-				}).catch(console.error)
-			} else {
-				resolve(ERRORMD)
-			}
-		}
-	})
-}
-
-let renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, additionalCallback?: extraCallback): Promise<void> => {
-
-	const sourcePath = context.sourcePath;
-	let renderDiv = new MarkdownRenderChild(div)
-	context.addChild(renderDiv)
-	if (recursiveDepth > SETTINGS.recursionDepth.value) {
-		div.createEl("p", source)
-		return new Promise((resolve, reject) => { resolve })
-	}
-	return MarkdownRenderer.renderMarkdown(
-		source,
-		div,
-		sourcePath,
-		renderDiv
-	).then(() => {
-		if (additionalCallback) {
-			additionalCallback(div, context, source, recursiveDepth + 1)
-		}
-	})
-}
-
-let renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, recursiveDepth: number, FSAdapter: FileSystemAdapter, attributes?: NamedNodeMap, convertHTML?: boolean, inline?: boolean, additionalCallback?: extraCallback): Promise<HTMLDivElement | HTMLSpanElement | HTMLIFrameElement> => {
-	let setIframe = (iframe: HTMLIFrameElement) => {
-		iframe.addClass(IFRAMECLASS, DIVCLASS)
-		iframe.scroll = () => {
-			iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
-		}
-	}
-	let setMD = (div: HTMLDivElement) => {
-		div.addClass(MDDIVCLASS, DIVCLASS)
-	}
-	let setInline = (span: HTMLSpanElement) => {
-		span.addClass(INLINECLASS, DIVCLASS)
-	}
-	return new Promise<HTMLDivElement | HTMLSpanElement | HTMLIFrameElement>(async (resolve, reject) => {
-		let endsMD = src.toLocaleLowerCase().endsWith(".md")
-		Array.from(element.children).forEach((i) => {
-			element.removeChild(i)
-		})
-		if (inline) {
-			getURI(src, FSAdapter, false).then((source) => {
-				let span = element.createEl("span")
-				if (SETTINGS.allowInline.value) {
-					span.innerHTML = source
-				} else {
-					span.innerHTML = ERRORINLINE
-				}
-				setInline(span)
-				resolve(span)
-			})
-		} else if (endsMD || convertHTML) {
-			let fileContentCallback = async (source: string) => {
-				let div = element.createEl("div")
-				Array.from(attributes).forEach((i) => {
-					if (!IGNOREDTAGS.contains(i.nodeName)) {
-						div.setAttribute(i.nodeName, i.nodeValue)
-					}
-				})
-				setMD(div)
-				await renderMD(source, div, context, recursiveDepth, additionalCallback)
-				resolve(div)
-			}
-			getURI(src, FSAdapter, convertHTML && !endsMD).then(fileContentCallback).catch(reject)
-		} else {
-			let iframe = element.createEl("iframe")
-			Array.from(attributes).forEach((i) => {
-				if (!IGNOREDTAGS.contains(i.nodeName)) {
-					iframe.setAttribute(i.nodeName, i.nodeValue)
-				}
-			})
-			iframe.src = await processFullURI(src, FSAdapter)
-			setIframe(iframe)
-			resolve(iframe)
-		}
-	})
-}
 
 export default class ObsidianDynamicImport extends Plugin {
+	cache: CacheType = EMPTYCACHE
+	settings: DynamicImportSettings
+
+	parseBoolean = (value: string) => {
+		return (value == "yes" || value == "true")
+	}
+	
+	parseObject = (value: any, typ: string) => {
+		if (typ == "string") {
+			return value
+		}
+		if (typ == "boolean") {
+			return this.parseBoolean(value)
+		}
+		if (typ == "number") {
+			return parseFloat(value)
+		}
+	}
+	
+	processURI = (URI: string, source: string, root: string): string => {
+		URI = URI.split("<")[0]
+		if (!URI.contains("://")) {
+			if (URI.startsWith("/")) {
+				return [URISCHEME, URI].join("")
+			}
+			else if (URI.startsWith("./")) {
+				return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI.substring(2)].join("")
+			}
+			else {
+				return [URISCHEME, "/", source.substring(0, source.lastIndexOf("/")), URI].join("")
+			}
+		}
+		return URI
+	}
+	
+	processFullURI = async (URI: string, FSAdapter: FileSystemAdapter): Promise<string> => {
+		let url = new URL(URI)
+		if (await FSAdapter.exists(url.pathname)) {
+			url.pathname = FSAdapter.getBasePath() + url.pathname
+		}
+		return url.toString()
+	}
+	
+	getURI = (URI: string, FSAdapter: FileSystemAdapter, convert?: boolean): Promise<string> => {
+		return new Promise<string>((resolve, reject) => {
+			let c = convert.toString()
+			let url = new URL(URI)
+			if (url.protocol == "file:") {
+				if (this.settings.useCacheForFiles.value && this.cache.value[c].hasOwnProperty(URI) && (new Date().getTime() - this.cache.time[c][URI].getTime() < this.settings.cacheRefreshTime.value)) {
+					resolve(this.cache.value[c][URI])
+					return
+				}
+				FSAdapter.read(url.pathname).then((d) => {
+					let dString = d.toString()
+					if (convert) {
+						dString = html2md(dString)
+					}
+					if (this.settings.useCacheForFiles.value) {
+						this.cache.value[c][URI] = dString
+						this.cache.time[c][URI] = new Date()
+					}
+					resolve(dString)
+				}).catch(console.error)
+			} else {
+				if (this.cache.value[c].hasOwnProperty(URI) && (new Date().getTime() - this.cache.time[c][URI].getTime() < this.settings.cacheRefreshTime.value)) {
+					resolve(this.cache.value[c][URI])
+					return
+				}
+				if (this.settings.allowInet.value) {
+					request({ url: url.href }).then((a) => {
+						if (convert) {
+							a = html2md(a)
+						}
+						this.cache.value[c][URI] = a
+						this.cache.time[c][URI] = new Date()
+						resolve(a)
+					}).catch(console.error)
+				} else {
+					resolve(ERRORMD)
+				}
+			}
+		})
+	}
+
+	renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, additionalCallback?: ExtraCallback): Promise<void> => {
+	
+		const sourcePath = context.sourcePath;
+		let renderDiv = new MarkdownRenderChild(div)
+		context.addChild(renderDiv)
+		if (recursiveDepth > this.settings.recursionDepth.value) {
+			div.createEl("p", source)
+			return Promise.resolve()
+		}
+		return MarkdownRenderer.renderMarkdown(
+			source,
+			div,
+			sourcePath,
+			renderDiv
+		).then(() => {
+			if (additionalCallback) {
+				additionalCallback(div, context, source, recursiveDepth + 1)
+			}
+		})
+	}
+	
+	renderURI = async (src: string, element: Element, context: MarkdownPostProcessorContext, recursiveDepth: number, FSAdapter: FileSystemAdapter, attributes?: NamedNodeMap, convertHTML?: boolean, inline?: boolean, additionalCallback?: ExtraCallback): Promise<HTMLDivElement | HTMLSpanElement | HTMLIFrameElement> => {
+		let setIframe = (iframe: HTMLIFrameElement) => {
+			iframe.addClass(IFRAMECLASS, DIVCLASS)
+			iframe.scroll = () => {
+				iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+			}
+		}
+		let setMD = (div: HTMLDivElement) => {
+			div.addClass(MDDIVCLASS, DIVCLASS)
+		}
+		let setInline = (span: HTMLSpanElement) => {
+			span.addClass(INLINECLASS, DIVCLASS)
+		}
+		return new Promise<HTMLDivElement | HTMLSpanElement | HTMLIFrameElement>(async (resolve, reject) => {
+			let endsMD = src.toLocaleLowerCase().endsWith(".md")
+			Array.from(element.children).forEach((i) => {
+				element.removeChild(i)
+			})
+			if (inline) {
+				this.getURI(src, FSAdapter, false).then((source) => {
+					let span = element.createEl("span")
+					if (this.settings.allowInline.value) {
+						span.innerHTML = source
+					} else {
+						span.innerHTML = ERRORINLINE
+					}
+					setInline(span)
+					resolve(span)
+				})
+			} else if (endsMD || convertHTML) {
+				let fileContentCallback = async (source: string) => {
+					let div = element.createEl("div")
+					Array.from(attributes).forEach((i) => {
+						if (!IGNOREDTAGS.contains(i.nodeName)) {
+							div.setAttribute(i.nodeName, i.nodeValue)
+						}
+					})
+					setMD(div)
+					await this.renderMD(source, div, context, recursiveDepth, additionalCallback)
+					resolve(div)
+				}
+				this.getURI(src, FSAdapter, convertHTML && !endsMD).then(fileContentCallback).catch(reject)
+			} else {
+				let iframe = element.createEl("iframe")
+				Array.from(attributes).forEach((i) => {
+					if (!IGNOREDTAGS.contains(i.nodeName)) {
+						iframe.setAttribute(i.nodeName, i.nodeValue)
+					}
+				})
+				iframe.src = await this.processFullURI(src, FSAdapter)
+				setIframe(iframe)
+				resolve(iframe)
+			}
+		})
+	}
+
 	async onload() {
 
 		await this.loadSettings();
@@ -220,12 +223,12 @@ export default class ObsidianDynamicImport extends Plugin {
 			for (let child of Array.from(iframes)) {
 				let attr = child.getAttribute("src")
 				if (attr != null) {
-					let src = processURI(attr, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
+					let src = this.processURI(attr, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
 
 					let classAttrib = child.getAttribute("class")
 					let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
 	
-					renderURI(src, element, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), child.attributes, convertHTML, false, markdownPostProcessor).then((iframe: HTMLIFrameElement) => {
+					this.renderURI(src, element, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), child.attributes, convertHTML, false, markdownPostProcessor).then((iframe: HTMLIFrameElement) => {
 						let src = new URL(iframe.src)
 						iframe.src = "app://local" + src.pathname
 					})
@@ -252,7 +255,7 @@ export default class ObsidianDynamicImport extends Plugin {
 						let words = line.split(" ")
 						{
 							let contains
-							for (let i = recursionDepth; i < SETTINGS.recursionDepth.value; i++) {
+							for (let i = recursionDepth; i < this.settings.recursionDepth.value; i++) {
 								words = words.map(i => i.trim())
 								contains = false
 								for (let index = words.length - 1; index >= 1; index--) {
@@ -261,7 +264,7 @@ export default class ObsidianDynamicImport extends Plugin {
 										contains = true
 										let beforeTag = words[index - 1].replace(PREFIX + PASTENAME, "")
 
-										let replaceString = (await getURI(processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), (this.app.vault.adapter as FileSystemAdapter), false)).split(" ")
+										let replaceString = (await this.getURI(this.processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), (this.app.vault.adapter as FileSystemAdapter), false)).split(" ")
 
 
 										let last = index + 1 < words.length
@@ -296,7 +299,7 @@ export default class ObsidianDynamicImport extends Plugin {
 							word = word.trim()
 							let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "") || (words[index].endsWith(PREFIX + INLINENAME) ? PREFIX + INLINENAME : "")
 							if (commandname) {
-								strings.push({ string: commandname + " " + word, URI: processURI(word, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), type: commandname })
+								strings.push({ string: commandname + " " + word, URI: this.processURI(word, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), type: commandname })
 							}
 						}
 						for (let promiseString of strings) {
@@ -305,7 +308,7 @@ export default class ObsidianDynamicImport extends Plugin {
 								if (line.contains(promiseString.string[0] + promiseString.string)) {
 									line = line.replace(promiseString.string[0] + promiseString.string + " ", promiseString.string)
 								}
-								await renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), inlineTempDiv.attributes, false, true, markdownPostProcessor)
+								await this.renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), inlineTempDiv.attributes, false, true, markdownPostProcessor)
 								let replaceString = inlineTempDiv.innerHTML.replace("\n", "")
 								inlines.push({string: replaceString, URI: promiseString.string})
 								
@@ -313,9 +316,9 @@ export default class ObsidianDynamicImport extends Plugin {
 								let replaceString = ""
 								let div = createEl("div")
 								if (promiseString.type == PREFIX + IMPORTNAME) {
-									await renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, !promiseString.URI.toLocaleLowerCase().endsWith(".md"), false, markdownPostProcessor)
+									await this.renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, !promiseString.URI.toLocaleLowerCase().endsWith(".md"), false, markdownPostProcessor)
 								} else if (promiseString.type == PREFIX + IFRAMENAME) {
-									await renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, false, false, markdownPostProcessor)
+									await this.renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, false, false, markdownPostProcessor)
 								}
 								replaceString = div.innerHTML.replace("\n", "")
 								line = line.replace(promiseString.string, replaceString)
@@ -329,9 +332,8 @@ export default class ObsidianDynamicImport extends Plugin {
 						element.removeChild(i)
 					})
 					let newDiv = element.createEl("div")
-					renderMD(mappedMDResolved.join("\n"), newDiv, context, recursionDepth + 1, markdownPostProcessor)
+					this.renderMD(mappedMDResolved.join("\n"), newDiv, context, recursionDepth + 1, markdownPostProcessor)
 					for (let inline of inlines) {
-						// newDiv.innerHTML = newDiv.innerHTML.replace(inline.URI, inline.string)
 						for (let el of Array.from(newDiv.querySelectorAll("*"))) {
 							if ("innerText" in el && (el as HTMLElement).innerText.contains(inline.URI)) {
 								el.innerHTML = el.innerHTML.replace(inline.URI, inline.string)
@@ -349,7 +351,7 @@ export default class ObsidianDynamicImport extends Plugin {
 
 		let markdownPostProcessor = (element: Element, context: MarkdownPostProcessorContext, MDtext?: string, recursion: number = 0) => {
 			processCustomCommands(element, context, MDtext, recursion);
-			processIframe(element, context, recursion)
+			// processIframe(element, context, recursion)
 
 		}
 
@@ -357,7 +359,7 @@ export default class ObsidianDynamicImport extends Plugin {
 
 		this.addCommand({
 			id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
-				CACHE = EMPTYCACHE
+				this.cache = EMPTYCACHE
 			}
 		})
 	}
@@ -367,11 +369,21 @@ export default class ObsidianDynamicImport extends Plugin {
 	}
 
 	async loadSettings() {
-		SETTINGS = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = DEFAULT_SETTINGS
+		this.loadData().then((data) => {
+			let items = Object.entries(data)
+			items.forEach((item:[string, string]) => {
+				(this.settings as any)[item[0]].value = item[1]
+			})
+		})
 	}
 
 	async saveSettings() {
-		await this.saveData(SETTINGS);
+		let saveData:any = {}
+		Object.entries(this.settings).forEach((i) => {
+			saveData[i[0]] = (i[1] as SettingItem<any>).value
+		})
+		await this.saveData(saveData);
 	}
 }
 
@@ -391,16 +403,28 @@ class ObsidianDynamicImportSettings extends PluginSettingTab {
 		let keyvals = Object.entries(DEFAULT_SETTINGS)
 
 		for (let keyval of keyvals) {
-			new Setting(containerEl)
+			let setting = new Setting(containerEl)
 				.setName(keyval[1].name)
 				.setDesc(keyval[1].desc)
-				.addText(text => text
+
+			if (typeof keyval[1].value == "boolean") {
+				setting.addToggle(toggle => toggle
+					.setValue((this.plugin.settings as any)[keyval[0]].value)
+					.onChange((bool) => {
+						(this.plugin.settings as any)[keyval[0]].value = bool
+						this.plugin.saveSettings()
+					})
+				)
+			} else {
+				setting.addText(text => text
 					.setPlaceholder(String(keyval[1].value))
-					.setValue(String((SETTINGS as any)[keyval[0]].value))
+					.setValue(String((this.plugin.settings as any)[keyval[0]].value))
 					.onChange((value) => {
-						(SETTINGS as any)[keyval[0]].value = parseObject(value, typeof keyval[1].value);
-						this.plugin.saveSettings();
-					}));
+						(this.plugin.settings as any)[keyval[0]].value = this.plugin.parseObject(value, typeof keyval[1].value)
+						this.plugin.saveSettings()
+					})
+				)
+			}
 		}
 	}
 }
