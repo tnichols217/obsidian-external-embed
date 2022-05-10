@@ -1,6 +1,6 @@
 {
-	"name": "obsidian-dynamic-import",
-	"version": "1.1.1",
+	"name": "obsidian-external-embed",
+	"version": "1.1.2",
 	"description": "Allows you to Import other MD files into your notes, and improves iframes",
 	"main": "main.js",
 	"scripts": {

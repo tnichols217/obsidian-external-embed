@@ -2,12 +2,12 @@ import { Vault, Plugin, FileSystemAdapter, MarkdownPostProcessorContext, Markdow
 import html2md from 'html-to-md'
 
 const URISCHEME = "file://"
-const DIVCLASS = "obsidian-dynamic-import"
-const MDDIVCLASS = "obsidian-dynamic-import-markdown"
-const IFRAMECLASS = "obsidian-dynamic-import-iframe"
-const INLINECLASS = "obsidian-dynamic-import-inline"
-const ERRORMD = "# Obsidian-dynamic-import cannot access the internet"
-const ERRORINLINE = "Obsidian-dynamic-import cannot use the inline command"
+const DIVCLASS = "obsidian-external-embed"
+const MDDIVCLASS = "obsidian-external-embed-markdown"
+const IFRAMECLASS = "obsidian-external-embed-iframe"
+const INLINECLASS = "obsidian-external-embed-inline"
+const ERRORMD = "# Obsidian-external-embed cannot access the internet"
+const ERRORINLINE = "Obsidian-external-embed cannot use the inline command"
 const CONVERTMD = "iframe-md"
 const IGNOREDTAGS = ["src", "sandbox"]
 const PREFIX = "!!!"
@@ -33,7 +33,7 @@ interface SettingItem<T> {
 	desc?: string
 }
 
-interface DynamicImportSettings {
+interface ExternalEmbedSettings {
 	allowInet: SettingItem<boolean>
 	allowInline: SettingItem<boolean>
 	recursionDepth: SettingItem<number>
@@ -41,7 +41,7 @@ interface DynamicImportSettings {
 	cacheRefreshTime: SettingItem<number>
 }
 
-const DEFAULT_SETTINGS: DynamicImportSettings = {
+const DEFAULT_SETTINGS: ExternalEmbedSettings = {
 	allowInet: { value: false, name: "Access Internet", desc: "Allows this plugin to access the internet to render remote MD files." },
 	allowInline: { value: false, name: "Allows access to the inline command", desc: "Enables the !!!inline command, which allows arbitrary HTML code to run (insecure)" },
 	recursionDepth: { value: 20, name: "Recusion Depth", desc: "Sets the amount of nested imports that can be called." },
@@ -51,9 +51,9 @@ const DEFAULT_SETTINGS: DynamicImportSettings = {
 
 
 
-export default class ObsidianDynamicImport extends Plugin {
+export default class ObsidianExternalEmbed extends Plugin {
 	cache: CacheType = EMPTYCACHE
-	settings: DynamicImportSettings
+	settings: ExternalEmbedSettings
 
 	parseBoolean = (value: string) => {
 		return (value == "yes" || value == "true")
@@ -216,7 +216,7 @@ export default class ObsidianDynamicImport extends Plugin {
 	async onload() {
 
 		await this.loadSettings();
-		this.addSettingTab(new ObsidianDynamicImportSettings(this.app, this));
+		this.addSettingTab(new ObsidianExternalEmbedSettings(this.app, this));
 
 		let processIframe = (element: Element, context: MarkdownPostProcessorContext, recursionDepth: number = 0) => {
 			let iframes = element.querySelectorAll("iframe")
@@ -387,10 +387,10 @@ export default class ObsidianDynamicImport extends Plugin {
 	}
 }
 
-class ObsidianDynamicImportSettings extends PluginSettingTab {
-	plugin: ObsidianDynamicImport;
+class ObsidianExternalEmbedSettings extends PluginSettingTab {
+	plugin: ObsidianExternalEmbed;
 
-	constructor(app: App, plugin: ObsidianDynamicImport) {
+	constructor(app: App, plugin: ObsidianExternalEmbed) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -398,7 +398,7 @@ class ObsidianDynamicImportSettings extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl('h2', { text: 'Settings for Obsidian Dynamic Import' });
+		containerEl.createEl('h2', { text: 'Settings for Obsidian External Embed' });
 
 		let keyvals = Object.entries(DEFAULT_SETTINGS)
 
