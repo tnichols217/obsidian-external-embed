@@ -3028,10 +3028,9 @@ var IFRAMECLASS = "obsidian-external-embed-iframe";
 var INLINECLASS = "obsidian-external-embed-inline";
 var ERRORMD = "# Obsidian-external-embed cannot access the internet";
 var ERRORINLINE = "Obsidian-external-embed cannot use the inline command";
-var CONVERTMD = "iframe-md";
+var ERRORFILE = "This file does not exist";
 var IGNOREDTAGS = ["src", "sandbox"];
 var PREFIX = "!!!";
-var IMPORTNAME = "import";
 var IFRAMENAME = "iframe";
 var INLINENAME = "inline";
 var PASTENAME = "paste";
@@ -3076,8 +3075,8 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
     };
     this.processFullURI = (URI, FSAdapter) => __async(this, null, function* () {
       let url = new URL(URI);
-      if (yield FSAdapter.exists(url.pathname)) {
-        url.pathname = FSAdapter.getBasePath() + url.pathname;
+      if (url.protocol == "file:" && (yield FSAdapter.exists(url.pathname))) {
+        url = new URL("app://local/" + FSAdapter.getBasePath() + url.pathname);
       }
       return url.toString();
     });
@@ -3090,17 +3089,23 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
             resolve(this.cache.value[c][URI]);
             return;
           }
-          FSAdapter.read(url.pathname).then((d) => {
-            let dString = d.toString();
-            if (convert) {
-              dString = (0, import_html_to_md.default)(dString);
+          FSAdapter.exists(url.pathname).then((e) => {
+            if (e) {
+              FSAdapter.read(url.pathname).then((d) => {
+                let dString = d.toString();
+                if (convert) {
+                  dString = (0, import_html_to_md.default)(dString);
+                }
+                if (this.settings.useCacheForFiles.value) {
+                  this.cache.value[c][URI] = dString;
+                  this.cache.time[c][URI] = new Date();
+                }
+                resolve(dString);
+              }).catch(reject);
+            } else {
+              resolve([url.pathname, ERRORFILE].join(": "));
             }
-            if (this.settings.useCacheForFiles.value) {
-              this.cache.value[c][URI] = dString;
-              this.cache.time[c][URI] = new Date();
-            }
-            resolve(dString);
-          }).catch(console.error);
+          }).catch(reject);
         } else {
           if (this.cache.value[c].hasOwnProperty(URI) && new Date().getTime() - this.cache.time[c][URI].getTime() < this.settings.cacheRefreshTime.value) {
             resolve(this.cache.value[c][URI]);
@@ -3163,7 +3168,7 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
             }
             setInline(span);
             resolve(span);
-          });
+          }).catch(reject);
         } else if (endsMD || convertHTML) {
           let fileContentCallback = (source) => __async(this, null, function* () {
             let div = element.createEl("div");
@@ -3195,21 +3200,6 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
     return __async(this, null, function* () {
       yield this.loadSettings();
       this.addSettingTab(new ObsidianExternalEmbedSettings(this.app, this));
-      let processIframe = (element, context, recursionDepth = 0) => {
-        let iframes = element.querySelectorAll("iframe");
-        for (let child of Array.from(iframes)) {
-          let attr = child.getAttribute("src");
-          if (attr != null) {
-            let src = this.processURI(attr, context.sourcePath, this.app.vault.adapter.getBasePath());
-            let classAttrib = child.getAttribute("class");
-            let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false;
-            this.renderURI(src, element, context, recursionDepth + 1, this.app.vault.adapter, child.attributes, convertHTML, false, markdownPostProcessor).then((iframe) => {
-              let src2 = new URL(iframe.src);
-              iframe.src = "app://local" + src2.pathname;
-            });
-          }
-        }
-      };
       let processCustomCommands = (element, context, MDtextString, recursionDepth = 0) => __async(this, null, function* () {
         let textContent = element.textContent;
         let MDtext;
@@ -3222,10 +3212,10 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
         } else {
           MDtext = MDtextString.split("\n");
         }
-        if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME) || textContent.contains(PREFIX + INLINENAME) || textContent.contains(PREFIX + PASTENAME)) {
+        if (textContent.contains(PREFIX + INLINENAME) || textContent.contains(PREFIX + PASTENAME)) {
           let inlines = [];
           let mappedMD = MDtext.map((line) => __async(this, null, function* () {
-            if (line.contains(PREFIX + IMPORTNAME) || line.contains(PREFIX + IFRAMENAME) || line.contains(PREFIX + INLINENAME) || line.contains(PREFIX + PASTENAME)) {
+            if (line.contains(PREFIX + INLINENAME) || line.contains(PREFIX + PASTENAME)) {
               let words = line.split(" ");
               {
                 let contains;
@@ -3256,12 +3246,12 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
                   }
                 }
               }
-              words[words.length - 1] = words[words.length - 1].replace(PREFIX + IMPORTNAME, "").replace(PREFIX + IFRAMENAME, "").replace(PREFIX + PASTENAME, "");
+              words[words.length - 1] = words[words.length - 1].replace(PREFIX + PASTENAME, "");
               line = words.join(" ");
               let strings = [];
               for (let [index, word] of Array.from(words).slice(1).entries()) {
                 word = word.trim();
-                let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "") || (words[index].endsWith(PREFIX + INLINENAME) ? PREFIX + INLINENAME : "");
+                let commandname = words[index].endsWith(PREFIX + INLINENAME) ? PREFIX + INLINENAME : "";
                 if (commandname) {
                   strings.push({ string: commandname + " " + word, URI: this.processURI(word, context.sourcePath, this.app.vault.adapter.getBasePath()), type: commandname });
                 }
@@ -3272,19 +3262,9 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
                   if (line.contains(promiseString.string[0] + promiseString.string)) {
                     line = line.replace(promiseString.string[0] + promiseString.string + " ", promiseString.string);
                   }
-                  yield this.renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, this.app.vault.adapter, inlineTempDiv.attributes, false, true, markdownPostProcessor);
+                  yield this.renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, this.app.vault.adapter, inlineTempDiv.attributes, false, true, markdownPostProcessor).catch();
                   let replaceString = inlineTempDiv.innerHTML.replace("\n", "");
                   inlines.push({ string: replaceString, URI: promiseString.string });
-                } else {
-                  let replaceString = "";
-                  let div = createEl("div");
-                  if (promiseString.type == PREFIX + IMPORTNAME) {
-                    yield this.renderURI(promiseString.URI, div, context, recursionDepth + 1, this.app.vault.adapter, div.attributes, !promiseString.URI.toLocaleLowerCase().endsWith(".md"), false, markdownPostProcessor);
-                  } else if (promiseString.type == PREFIX + IFRAMENAME) {
-                    yield this.renderURI(promiseString.URI, div, context, recursionDepth + 1, this.app.vault.adapter, div.attributes, false, false, markdownPostProcessor);
-                  }
-                  replaceString = div.innerHTML.replace("\n", "");
-                  line = line.replace(promiseString.string, replaceString);
                 }
               }
             }
@@ -3315,6 +3295,23 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
         processCustomCommands(element, context, MDtext, recursion);
       };
       this.registerMarkdownPostProcessor(markdownPostProcessor);
+      this.registerMarkdownCodeBlockProcessor(IFRAMENAME, (source, el, ctx) => {
+        let split = source.replace("\n", " ").split(" ");
+        let src = this.processURI(split[0], ctx.sourcePath, this.app.vault.adapter.getBasePath());
+        console.log(src);
+        let div = el.createEl("div");
+        ctx.addChild(new import_obsidian.MarkdownRenderChild(div));
+        let convert = false;
+        if (split.length > 1) {
+          convert = this.parseBoolean(split[1]);
+        }
+        this.renderURI(src, el, ctx, 1, this.app.vault.adapter, div.attributes, convert, false, markdownPostProcessor);
+      });
+      this.registerMarkdownCodeBlockProcessor(INLINENAME, (source, el, ctx) => {
+        let div = el.createEl("div");
+        ctx.addChild(new import_obsidian.MarkdownRenderChild(div));
+        div.innerHTML = source;
+      });
       this.addCommand({
         id: "clear_cache",
         name: "Clear Iframe Cache",
@@ -3330,10 +3327,12 @@ var ObsidianExternalEmbed = class extends import_obsidian.Plugin {
     return __async(this, null, function* () {
       this.settings = DEFAULT_SETTINGS;
       this.loadData().then((data) => {
-        let items = Object.entries(data);
-        items.forEach((item) => {
-          this.settings[item[0]].value = item[1];
-        });
+        if (data) {
+          let items = Object.entries(data);
+          items.forEach((item) => {
+            this.settings[item[0]].value = item[1];
+          });
+        }
       });
     });
   }

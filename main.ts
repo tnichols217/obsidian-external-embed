@@ -8,15 +8,15 @@ const IFRAMECLASS = "obsidian-external-embed-iframe"
 const INLINECLASS = "obsidian-external-embed-inline"
 const ERRORMD = "# Obsidian-external-embed cannot access the internet"
 const ERRORINLINE = "Obsidian-external-embed cannot use the inline command"
-const CONVERTMD = "iframe-md"
+const ERRORFILE = "This file does not exist"
 const IGNOREDTAGS = ["src", "sandbox"]
 const PREFIX = "!!!"
 const IMPORTNAME = "import"
 const IFRAMENAME = "iframe"
 const INLINENAME = "inline"
+const HTMLNAME = "html"
 const PASTENAME = "paste"
 const EMPTYCACHE = { value: { "true": {}, "false": {} }, time: { "true": {}, "false": {} } }
-
 
 type CacheItem<T> = Record<string, Record<string, T>>
 
@@ -48,8 +48,6 @@ const DEFAULT_SETTINGS: ExternalEmbedSettings = {
 	useCacheForFiles: { value: false, name: "Cache Local Files", desc: "Cache files instead of loading them on every rerender. (Remote Files will always be cached)" },
 	cacheRefreshTime: { value: 30000, name: "Cache Refresh Time (miliseconds)", desc: "Cached filed called over this time ago will be refreshed when rendered." }
 }
-
-
 
 export default class ObsidianExternalEmbed extends Plugin {
 	cache: CacheType = EMPTYCACHE
@@ -89,8 +87,8 @@ export default class ObsidianExternalEmbed extends Plugin {
 	
 	processFullURI = async (URI: string, FSAdapter: FileSystemAdapter): Promise<string> => {
 		let url = new URL(URI)
-		if (await FSAdapter.exists(url.pathname)) {
-			url.pathname = FSAdapter.getBasePath() + url.pathname
+		if (url.protocol == "file:" && await FSAdapter.exists(url.pathname)) {
+			url = new URL("app://local/" + FSAdapter.getBasePath() + url.pathname)
 		}
 		return url.toString()
 	}
@@ -104,17 +102,23 @@ export default class ObsidianExternalEmbed extends Plugin {
 					resolve(this.cache.value[c][URI])
 					return
 				}
-				FSAdapter.read(url.pathname).then((d) => {
-					let dString = d.toString()
-					if (convert) {
-						dString = html2md(dString)
+				FSAdapter.exists(url.pathname).then((e) => {
+					if (e) {
+						FSAdapter.read(url.pathname).then((d) => {
+							let dString = d.toString()
+							if (convert) {
+								dString = html2md(dString)
+							}
+							if (this.settings.useCacheForFiles.value) {
+								this.cache.value[c][URI] = dString
+								this.cache.time[c][URI] = new Date()
+							}
+							resolve(dString)
+						}).catch(reject)
+					} else {
+						resolve([url.pathname, ERRORFILE].join(": "))
 					}
-					if (this.settings.useCacheForFiles.value) {
-						this.cache.value[c][URI] = dString
-						this.cache.time[c][URI] = new Date()
-					}
-					resolve(dString)
-				}).catch(console.error)
+				}).catch(reject)
 			} else {
 				if (this.cache.value[c].hasOwnProperty(URI) && (new Date().getTime() - this.cache.time[c][URI].getTime() < this.settings.cacheRefreshTime.value)) {
 					resolve(this.cache.value[c][URI])
@@ -137,7 +141,6 @@ export default class ObsidianExternalEmbed extends Plugin {
 	}
 
 	renderMD = (source: string, div: HTMLElement, context: MarkdownPostProcessorContext, recursiveDepth: number, additionalCallback?: ExtraCallback): Promise<void> => {
-	
 		const sourcePath = context.sourcePath;
 		let renderDiv = new MarkdownRenderChild(div)
 		context.addChild(renderDiv)
@@ -185,7 +188,7 @@ export default class ObsidianExternalEmbed extends Plugin {
 					}
 					setInline(span)
 					resolve(span)
-				})
+				}).catch(reject)
 			} else if (endsMD || convertHTML) {
 				let fileContentCallback = async (source: string) => {
 					let div = element.createEl("div")
@@ -218,24 +221,6 @@ export default class ObsidianExternalEmbed extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new ObsidianExternalEmbedSettings(this.app, this));
 
-		let processIframe = (element: Element, context: MarkdownPostProcessorContext, recursionDepth: number = 0) => {
-			let iframes = element.querySelectorAll("iframe")
-			for (let child of Array.from(iframes)) {
-				let attr = child.getAttribute("src")
-				if (attr != null) {
-					let src = this.processURI(attr, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
-
-					let classAttrib = child.getAttribute("class")
-					let convertHTML = classAttrib ? classAttrib.split(" ").contains(CONVERTMD) : false
-	
-					this.renderURI(src, element, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), child.attributes, convertHTML, false, markdownPostProcessor).then((iframe: HTMLIFrameElement) => {
-						let src = new URL(iframe.src)
-						iframe.src = "app://local" + src.pathname
-					})
-				}
-			}
-		}
-
 		let processCustomCommands = async (element: Element, context: MarkdownPostProcessorContext, MDtextString?: string, recursionDepth: number = 0) => {
 			let textContent = element.textContent
 			let MDtext
@@ -248,10 +233,10 @@ export default class ObsidianExternalEmbed extends Plugin {
 			} else {
 				MDtext = MDtextString.split("\n")
 			}
-			if (textContent.contains(PREFIX + IMPORTNAME) || textContent.contains(PREFIX + IFRAMENAME) || textContent.contains(PREFIX + INLINENAME) || textContent.contains(PREFIX + PASTENAME)) {
+			if (textContent.contains(PREFIX + INLINENAME) || textContent.contains(PREFIX + PASTENAME)) {
 				let inlines: { string: string, URI: string }[] = []
 				let mappedMD = MDtext.map(async (line) => {
-					if (line.contains(PREFIX + IMPORTNAME) || line.contains(PREFIX + IFRAMENAME) || line.contains(PREFIX + INLINENAME) || line.contains(PREFIX + PASTENAME)) {
+					if (line.contains(PREFIX + INLINENAME) || line.contains(PREFIX + PASTENAME)) {
 						let words = line.split(" ")
 						{
 							let contains
@@ -263,10 +248,7 @@ export default class ObsidianExternalEmbed extends Plugin {
 									if (prevWord.endsWith(PREFIX + PASTENAME)) {
 										contains = true
 										let beforeTag = words[index - 1].replace(PREFIX + PASTENAME, "")
-
 										let replaceString = (await this.getURI(this.processURI(words[index], context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), (this.app.vault.adapter as FileSystemAdapter), false)).split(" ")
-
-
 										let last = index + 1 < words.length
 										if (beforeTag.endsWith(PREFIX[0]) && last) {
 											beforeTag = beforeTag.slice(0, beforeTag.length - 2)
@@ -276,7 +258,6 @@ export default class ObsidianExternalEmbed extends Plugin {
 										}
 										words.splice(index - 1, 3, ...replaceString)
 										words[index - 1] = beforeTag + words[index - 1]
-
 									}
 								}
 								line = words.join(" ")
@@ -286,18 +267,12 @@ export default class ObsidianExternalEmbed extends Plugin {
 								}
 							}
 						}
-
-
-						words[words.length - 1] = words[words.length - 1].replace(PREFIX + IMPORTNAME, "").replace(PREFIX + IFRAMENAME, "").replace(PREFIX + PASTENAME, "")
+						words[words.length - 1] = words[words.length - 1].replace(PREFIX + PASTENAME, "")
 						line = words.join(" ")
-
-
-
-
 						let strings: { string: string, URI: string, type: string }[] = []
 						for (let [index, word] of Array.from(words).slice(1).entries()) {
 							word = word.trim()
-							let commandname = (words[index].endsWith(PREFIX + IMPORTNAME) ? PREFIX + IMPORTNAME : "") || (words[index].endsWith(PREFIX + IFRAMENAME) ? PREFIX + IFRAMENAME : "") || (words[index].endsWith(PREFIX + INLINENAME) ? PREFIX + INLINENAME : "")
+							let commandname = (words[index].endsWith(PREFIX + INLINENAME) ? PREFIX + INLINENAME : "")
 							if (commandname) {
 								strings.push({ string: commandname + " " + word, URI: this.processURI(word, context.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath()), type: commandname })
 							}
@@ -308,20 +283,9 @@ export default class ObsidianExternalEmbed extends Plugin {
 								if (line.contains(promiseString.string[0] + promiseString.string)) {
 									line = line.replace(promiseString.string[0] + promiseString.string + " ", promiseString.string)
 								}
-								await this.renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), inlineTempDiv.attributes, false, true, markdownPostProcessor)
+								await this.renderURI(promiseString.URI, inlineTempDiv, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), inlineTempDiv.attributes, false, true, markdownPostProcessor).catch()
 								let replaceString = inlineTempDiv.innerHTML.replace("\n", "")
 								inlines.push({string: replaceString, URI: promiseString.string})
-								
-							} else {
-								let replaceString = ""
-								let div = createEl("div")
-								if (promiseString.type == PREFIX + IMPORTNAME) {
-									await this.renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, !promiseString.URI.toLocaleLowerCase().endsWith(".md"), false, markdownPostProcessor)
-								} else if (promiseString.type == PREFIX + IFRAMENAME) {
-									await this.renderURI(promiseString.URI, div, context, recursionDepth + 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, false, false, markdownPostProcessor)
-								}
-								replaceString = div.innerHTML.replace("\n", "")
-								line = line.replace(promiseString.string, replaceString)
 							}
 						}
 					}
@@ -351,11 +315,28 @@ export default class ObsidianExternalEmbed extends Plugin {
 
 		let markdownPostProcessor = (element: Element, context: MarkdownPostProcessorContext, MDtext?: string, recursion: number = 0) => {
 			processCustomCommands(element, context, MDtext, recursion);
-			// processIframe(element, context, recursion)
-
 		}
 
-		this.registerMarkdownPostProcessor(markdownPostProcessor);
+		this.registerMarkdownPostProcessor(markdownPostProcessor)
+
+		this.registerMarkdownCodeBlockProcessor(IFRAMENAME, (source, el, ctx) => {
+			let split = source.replace("\n", " ").split(" ")
+			let src = this.processURI(split[0], ctx.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
+			console.log(src)
+			let div = el.createEl("div")
+			ctx.addChild(new MarkdownRenderChild(div))
+			let convert = false
+			if (split.length > 1) {
+				convert = this.parseBoolean(split[1])
+			}
+			this.renderURI(src, el, ctx, 1, (this.app.vault.adapter as FileSystemAdapter), div.attributes, convert, false, markdownPostProcessor)
+		})
+
+		this.registerMarkdownCodeBlockProcessor(INLINENAME, (source, el, ctx) => {
+			let div = el.createEl("div")
+			ctx.addChild(new MarkdownRenderChild(div))
+			div.innerHTML = source
+		})
 
 		this.addCommand({
 			id: "clear_cache", name: "Clear Iframe Cache", callback: () => {
@@ -371,10 +352,12 @@ export default class ObsidianExternalEmbed extends Plugin {
 	async loadSettings() {
 		this.settings = DEFAULT_SETTINGS
 		this.loadData().then((data) => {
-			let items = Object.entries(data)
-			items.forEach((item:[string, string]) => {
-				(this.settings as any)[item[0]].value = item[1]
-			})
+			if (data) {
+				let items = Object.entries(data)
+				items.forEach((item:[string, string]) => {
+					(this.settings as any)[item[0]].value = item[1]
+				})
+			}
 		})
 	}
 
@@ -399,14 +382,11 @@ class ObsidianExternalEmbedSettings extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 		containerEl.createEl('h2', { text: 'Settings for Obsidian External Embed' });
-
 		let keyvals = Object.entries(DEFAULT_SETTINGS)
-
 		for (let keyval of keyvals) {
 			let setting = new Setting(containerEl)
 				.setName(keyval[1].name)
 				.setDesc(keyval[1].desc)
-
 			if (typeof keyval[1].value == "boolean") {
 				setting.addToggle(toggle => toggle
 					.setValue((this.plugin.settings as any)[keyval[0]].value)

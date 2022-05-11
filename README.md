@@ -10,14 +10,6 @@ Execute by typing `!!!paste` followed by a path to a file or URL.
 Will simply replace the command with the raw file contents before getting rerendered as MD
 Executes first out of all three commands. Put a fourth exclamation mark in the beginning to remove the whitespace after the paste command. If you want to have no whitespace before the paste, simply delete it.
 
-### iframe
-Execute by typing `!!!iframe` followed by a path to a file or URL to iframe, if its an MD file, it will render it
-Simply replaces the command with an iframe tag
-
-### import
-Execute by typing `!!!iframe` followed by a path to a file or URL. Will attempt to convert an html page into MD before rendering it
-Will replace the command with rendered MD
-
 ### inline
 Execute by typing `!!!inline` followed by a path to a file or URL. Will insert the html file into where the command was called from inline
 Similar to paste, it also has the additional `!` for removing the space afterwards
@@ -31,97 +23,7 @@ This plugin also allows you to "iframe" an MD file, which will include its code 
 - Files outside your vault cannot be accessed due to a limitation in the obsidian dataAdapter API
 
 ## Examples
-### Importing MD files with the \<iframe> tag
-To use, just use the src attribute in an iframe tag:
-![image](https://user-images.githubusercontent.com/62992267/166679372-ca3e8dcb-b5ce-47a0-b49a-09d71478f185.png)
 
-Produced with the following MD:
-```md
-# Stuff outside the iframe
-- Example list
-
-<iframe src="https://raw.githubusercontent.com/tnichols217/obsidian-columns/main/README.md" style="width: 100%; padding:50px"></iframe>
-```
-
-### Importing a website and converting it to MD
-![image](https://user-images.githubusercontent.com/62992267/166702025-36436b98-5ef6-432e-a6bd-4b22a3afe247.png)
-
-Produced with the following MD:
-```md
-# Stuff outside the iframe
-- Example list
-
-<iframe src="https://linux.die.net/man/1/curl" class="iframe-md" style="margin: 50px"></iframe>
-```
-
-### Using the `!!!import` command
-![image](https://user-images.githubusercontent.com/62992267/167250059-9ac70547-69b2-4658-850f-139312317d09.png)
-
-Produced with the following MD:
-```md
-# This is file example.md
-**Here I import example1.md:**
-
-!!!import example1.md
-
-**Here i import it again:**
-
-!!!import example1.md
-```
-
-### Using the `!!!paste` command
-![image](https://user-images.githubusercontent.com/62992267/167250122-08d6bdb2-af5a-44be-a079-ea0dc381a674.png)
-
-Produced with the following MD:
-```md
-# This is file exmaple.md
-
-My name is !!!paste Myname.md
-```
-
-### Using `!!!paste` to load a file defined in another file
-![image](https://user-images.githubusercontent.com/62992267/167250215-48cecc36-de1b-4303-b36a-d1eae135bf75.png)
-
-The filename to be imported is defined inside the fileToLoad.md file
-
-```md
-# This is file exmaple.md
-
-!!!import !!!paste fileToLoad.md
-```
-
-### Using the `!!!inline` command
-![image](https://user-images.githubusercontent.com/62992267/167395039-d56466b7-3ef5-4204-8020-f19b9ff05221.png)
-
-```md
-# This is file exmaple.md
-## The current time is: !!!inline clock.md 
-
-You can even put it in the middle **(!!!!inline clock.md )** of a paragraph:
-```
-
-clock.md
-```html
-<span onload='
-	let getTime = () => {
-		let date = new Date(); 
-		let hh = date.getHours();
-		let mm = date.getMinutes();
-		let ss = date.getSeconds();
-		
-		hh = (hh < 10) ? "0" + hh : hh;
-		mm = (mm < 10) ? "0" + mm : mm;
-		ss = (ss < 10) ? "0" + ss : ss;
-		
-		return hh + ":" + mm + ":" + ss;
-	};
-	let updateTime = async () => {
-		let time = getTime();
-		this.innerText=time;
-		setTimeout(updateTime, 100);
-	};
-	updateTime()'></span>
-```
 
 ## Settings
 ### Allow Internet
