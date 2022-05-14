@@ -6,13 +6,24 @@ For the iframe tag, to specify to attempt to convert the html to MD, use a class
 
 ## Custom commands
 ### paste
-Execute by typing `!!!paste` followed by a path to a file or URL.
-Will simply replace the command with the raw file contents before getting rerendered as MD
+Execute by typing `!!!paste` followed by a path to a file or URL.\
+Will simply replace the command with the raw file contents before getting rerendered as MD\
 Executes first out of all three commands. Put a fourth exclamation mark in the beginning to remove the whitespace after the paste command. If you want to have no whitespace before the paste, simply delete it.
 
 ### inline
-Execute by typing `!!!inline` followed by a path to a file or URL. Will insert the html file into where the command was called from inline
+Execute by typing `!!!inline` followed by a path to a file or URL. Will insert the html file into where the command was called from inline\
 Similar to paste, it also has the additional `!` for removing the space afterwards
+
+## Custom commandblocks
+### inline
+Just executes the arbitrary html code inside the inline block. Also runs the onload function (if enabled in settings) (insecure)
+
+### import
+Imports external HTML and loads it. Also runs the onload function on each element. (if enabled in settings)
+
+### iframe
+Iframes the file inside the commandblock. If the file ends with md, it converts it renders the external MD in the current file.\
+To force the page to be converted to MD, add true after the link.
 
 ## MD files
 This plugin also allows you to "iframe" an MD file, which will include its code in the document (can be another document or an online source). You can also name the iframe with a "iframe-md" class to attempt to convert html to md
