@@ -34,7 +34,95 @@ This plugin also allows you to "iframe" an MD file, which will include its code 
 - Files outside your vault cannot be accessed due to a limitation in the obsidian dataAdapter API
 
 ## Examples
+### Inline command
+![image](https://user-images.githubusercontent.com/62992267/168474961-a7e9752c-ae33-40c9-910b-215f6d3d6f97.png)
 
+Source:
+```md
+# This is file example.md
+Here I am inlining the code from clock.md into this file: !!!inline clock.md
+### You can even put it in the middle **(!!!!inline clock.md )** of a heading
+```
+```html
+<span onload='
+	let getTime = () => {
+		let date = new Date(); 
+		let hh = date.getHours();
+		let mm = date.getMinutes();
+		let ss = date.getSeconds();
+		
+		hh = (hh < 10) ? "0" + hh : hh;
+		mm = (mm < 10) ? "0" + mm : mm;
+		ss = (ss < 10) ? "0" + ss : ss;
+		
+		return hh + ":" + mm + ":" + ss;
+	};
+	let updateTime = async () => {
+		let time = getTime();
+		this.innerText=time;
+		setTimeout(updateTime, 100);
+	};
+	updateTime()'></span>
+```
+
+### Paste Command
+![image](https://user-images.githubusercontent.com/62992267/168475443-3e6a51d3-9111-4d31-98d5-b9d217aa3662.png)
+
+Source:
+````md
+# This is file example.md
+Here I paste the contents of fileToLoad.md: **!!!paste fileToLoad.md **
+
+You can chain the paste command into the inline command: !!!inline !!!paste fileToLoad2.md
+
+You can chain the paste command into the other commandblocks: 
+```iframe
+!!!!paste fileToLoad.md .md
+```
+````
+````md
+## This is example1.md
+- more random things to see
+
+```iframe
+https://linux.die.net/man/1/curl true
+```
+````
+
+### Inline commandblock
+![image](https://user-images.githubusercontent.com/62992267/168475601-7af78cce-bc4f-4deb-8969-72c5f56cd4b6.png)
+
+Source:
+````md
+# This is file example.md
+```inline
+<h2 onload='
+	this.innerText += ", Supports the onload function as well"
+'>Hello</h2>
+```
+````
+
+### Import commandblock
+![image](https://user-images.githubusercontent.com/62992267/168475687-358607f9-c676-4e15-96be-4bb69a0150f3.png)
+
+Source:
+````md
+# This is file example.md
+```import
+clock.md
+```
+````
+
+### Iframe commandblock
+![image](https://user-images.githubusercontent.com/62992267/168475778-72cbc549-4107-42d6-a34c-ac095e4ceb1c.png)
+
+Source:
+````md
+# This is file example.md
+```iframe
+https://linux.die.net/man/1/curl true
+```
+````
 
 ## Settings
 ### Allow Internet
