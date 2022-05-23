@@ -326,7 +326,6 @@ export default class ObsidianExternalEmbed extends Plugin {
 		this.registerMarkdownCodeBlockProcessor(IFRAMENAME, (source, el, ctx) => {
 			let split = source.replace("\n", " ").split(" ")
 			let src = this.processURI(split[0], ctx.sourcePath, (this.app.vault.adapter as FileSystemAdapter).getBasePath())
-			console.log(src)
 			let div = el.createEl("div")
 			ctx.addChild(new MarkdownRenderChild(div))
 			let convert = false
